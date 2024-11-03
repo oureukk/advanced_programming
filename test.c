@@ -2,14 +2,82 @@
 #include <stdlib.h>
 #include <time.h>
 #include "bi_function.c"
+#include "bi_arith.c"
+
+// bi_subtract 함수 테스트 함수
+void test_bi_subtract() {
+    pbigint a = NULL;
+    pbigint b = NULL;
+    pbigint result = NULL;
+
+    // 첫 번째 테스트 케이스: 큰 수 - 작은 수 (양수 결과)
+    word a_arr[] = {0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0};
+    word b_arr[] = {0x11111111, 0x22222222, 0x33333333, 0x44444444, 0x0};
+    bi_set_from_array(&a, 1, 5, a_arr);
+    bi_set_from_array(&b, 1, 5, b_arr);
+
+    printf("Test Case 1: 큰 수 - 작은 수 (양수 결과)\n");
+    printf("A: ");
+    bi_print(&a, 16);
+    printf("B: ");
+    bi_print(&b, 16);
+    bi_subtract(&result, a, b);
+    printf("A - B = ");
+    bi_print(&result, 16);
+
+    // 메모리 해제
+    bi_delete(&a);
+    bi_delete(&b);
+    bi_delete(&result);
+
+    // 두 번째 테스트 케이스: 작은 수 - 큰 수 (음수 결과)
+    word a_arr2[] = {0x11111111, 0x22222222, 0x33333333, 0x44444444, 0x0};
+    word b_arr2[] = {0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0};
+    bi_set_from_array(&a, 1, 5, a_arr2);
+    bi_set_from_array(&b, 1, 5, b_arr2);
+
+    printf("Test Case 2: 작은 수 - 큰 수 (음수 결과)\n");
+    printf("A: ");
+    bi_print(&a, 16);
+    printf("B: ");
+    bi_print(&b, 16);
+    bi_subtract(&result, a, b);
+    printf("A - B = ");
+    bi_print(&result, 16);
+
+    // 메모리 해제
+    bi_delete(&a);
+    bi_delete(&b);
+    bi_delete(&result);
+
+    // 세 번째 테스트 케이스: 같은 값 (결과가 0)
+    word a_arr3[] = {0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0};
+    word b_arr3[] = {0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0};
+    bi_set_from_array(&a, 1, 5, a_arr3);
+    bi_set_from_array(&b, 1, 5, b_arr3);
+
+    printf("Test Case 3: 같은 값 (결과가 0)\n");
+    printf("A: ");
+    bi_print(&a, 16);
+    printf("B: ");
+    bi_print(&b, 16);
+    bi_subtract(&result, a, b);
+    printf("A - B = ");
+    bi_print(&result, 16);
+
+    // 메모리 해제
+    bi_delete(&a);
+    bi_delete(&b);
+    bi_delete(&result);
+}
 
 int main() {
     srand((unsigned int)time(NULL));
 
     pbigint my_bigint = NULL;
-    pbigint temp_bigint= NULL;
-    pbigint temp2_bigint= NULL;
-    pbigint copy_bigint= NULL;
+    pbigint temp_bigint = NULL;
+    pbigint temp2_bigint = NULL;
+    pbigint copy_bigint = NULL;
 
     // 무작위 난수로 bigint 생성
     bi_get_random(&my_bigint, 5);
@@ -32,7 +100,11 @@ int main() {
 
     // bigint 복사
     bi_assign(&copy_bigint, &temp_bigint);
+    printf("복사된 bigint:\n");
     bi_print(&copy_bigint, 16);
+
+    // bi_subtract 테스트 실행
+    test_bi_subtract();
 
     // 동적으로 할당한 메모리 해제
     bi_delete(&my_bigint);

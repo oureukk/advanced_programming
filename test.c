@@ -70,7 +70,6 @@ void test_bi_subtract() {
     bi_delete(&b);
     bi_delete(&result);
 }
-
 int main() {
     srand((unsigned int)time(NULL));
 

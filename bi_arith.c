@@ -53,12 +53,7 @@ msg bi_subtract(pbigint* result, const pbigint a, const pbigint b) {
         (*result)->a[i] = C; // 결과에 저장
     }
 
-    // 결과의 워드 길이 업데이트
-    int new_len = larger->word_len;
-    while (new_len > 1 && (*result)->a[new_len - 1] == 0) {
-        new_len--; // 상위 비트가 0인 워드는 생략
-    }
-    (*result)->word_len = new_len;
+    bi_refine(result);
 
     return 0;
 }

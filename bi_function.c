@@ -40,19 +40,21 @@ msg bi_delete(pbigint* dst) {
 
 // 메모리 재설정 함수
 msg bi_refine(pbigint* dst) {
-    int new_word_len = 1;  // 기본 크기 설정
-    msg* new_a = (msg*)realloc((*dst)->a, new_word_len * sizeof(msg));
+    // 상위 워드가 0인 경우 유효 워드 길이를 계산
+    int new_word_len = (*dst)->word_len;
+    while (new_word_len > 1 && (*dst)->a[new_word_len - 1] == 0) {
+        new_word_len--;
+    }
 
+    // 필요한 크기로 다시 할당
+    msg* new_a = (msg*)realloc((*dst)->a, new_word_len * sizeof(msg));
     if (new_a == NULL) {
         fprintf(stderr, "Memory reallocation failed\n");
         exit(1);  // 프로그램 종료
     }
 
-    (*dst)->a = new_a;  // 포인터를 새로 할당된 메모리로 업데이트
-    (*dst)->word_len = new_word_len;  // 워드 길이를 업데이트
-    memset((*dst)->a, 0, new_word_len * sizeof(msg));  // 새로 할당된 메모리 초기화
-    (*dst)->sign = 0;  // 부호 초기화
-
+    (*dst)->a = new_a;  // 포인터 업데이트
+    (*dst)->word_len = new_word_len;  // 워드 길이 업데이트
     return 0;
 }
 

@@ -70,8 +70,9 @@ void test_bi_subtract() {
     bi_delete(&b);
     bi_delete(&result);
 }
+
 int main() {
-    srand((unsigned int)time(NULL));
+    /*srand((unsigned int)time(NULL));
 
     pbigint my_bigint = NULL;
     pbigint temp_bigint = NULL;
@@ -102,14 +103,17 @@ int main() {
     printf("복사된 bigint:\n");
     bi_print(&copy_bigint, 16);
 
-    // bi_subtract 테스트 실행
-    test_bi_subtract();
-
     // 동적으로 할당한 메모리 해제
     bi_delete(&my_bigint);
     bi_delete(&temp_bigint);
     bi_delete(&temp2_bigint);
     bi_delete(&copy_bigint);
+    */
+   
+    // bi_subtract 테스트 실행
+    test_bi_subtract();
+
+    
 
     return 0;
 }

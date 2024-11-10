@@ -1,8 +1,9 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "bi_function.c"
-#include "bi_arith.c"
+#include "bi_function.h"
+#include "bi_arith.h"
+#include "bi_add.h"
 
 // bi_subtract 함수 테스트 함수
 void test_bi_subtract() {
@@ -71,6 +72,53 @@ void test_bi_subtract() {
     bi_delete(&result);
 }
 
+void test_bi_add()
+{
+    pbigint a = NULL;
+    pbigint b = NULL;
+    pbigint result = NULL;
+
+    
+    word a_arr[] = { 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0 };
+    word b_arr[] = { 0x11111111, 0x22222222, 0x33333333, 0x44444444, 0x0 };
+    bi_set_from_array(&a, 1, 5, a_arr);
+    bi_set_from_array(&b, 1, 5, b_arr);
+
+    printf("Add Test 1\n");
+    printf("A: ");
+    bi_print(&a, 16);
+    printf("B: ");
+    bi_print(&b, 16);
+    bi_add(&result, a, b);
+    printf("A + B = ");
+    bi_print(&result, 16);
+
+    // 메모리 해제
+    bi_delete(&a);
+    bi_delete(&b);
+    bi_delete(&result);
+
+    // X2
+    word a_arr3[] = { 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0 };
+    word b_arr3[] = { 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0 };
+    bi_set_from_array(&a, 1, 5, a_arr3);
+    bi_set_from_array(&b, 1, 5, b_arr3);
+
+    printf("Add Test 2\n");
+    printf("A: ");
+    bi_print(&a, 16);
+    printf("B: ");
+    bi_print(&b, 16);
+    bi_add(&result, a, b);
+    printf("A + B = ");
+    bi_print(&result, 16);
+
+    // 메모리 해제
+    bi_delete(&a);
+    bi_delete(&b);
+    bi_delete(&result);
+}
+
 int main() {
     /*srand((unsigned int)time(NULL));
 
@@ -112,7 +160,7 @@ int main() {
    
     // bi_subtract 테스트 실행
     test_bi_subtract();
-
+    test_bi_add();
     
 
     return 0;

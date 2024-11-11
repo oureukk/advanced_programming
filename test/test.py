@@ -23,50 +23,50 @@ for line in lines:
     if oper == "1":
         compute=remove_hex_prefix(hex(num1 + num2))
         if(result == compute):
-            print("check1")
+            print("check add")
             continue
         else:
-            print("wrong compute1")
-            print("원래 값", compute)
-            print("계산 값", result)
+            print("wrong add")
+            print("원래 값:", compute)
+            print("계산 값:", result)
             f.close()
             exit(1)
             
     elif oper == "2":
         compute=remove_hex_prefix(hex(num1- num2))
         if(result == compute):
-            print("check2")
+            print("check sub")
             continue
 
         else:
-            print("wrong compute2")
-            print("원래 값",hex( num1- num2))
-            print("계산 값", result)
+            print("wrong compute sub")
+            print("원래 값:",hex( num1- num2))
+            print("계산 값:", result)
             f.close()
             exit(1)
             
     elif oper == "3":
         compute=remove_hex_prefix(hex(num1* num2))
         if(result == compute):
-            print("check3")
+            print("check mul")
             continue
         else:
-            print("wrong compute3")
+            print("wrong compute mul")
             print(f'line : {f.tell()}')
-            print("원래 값",hex( num1* num2))
-            print("계산 값", result)
+            print("원래 값:",hex( num1* num2))
+            print("계산 값:", result)
             f.close()
             exit(1)
             
     elif oper == "4":
         compute=remove_hex_prefix(hex(num1/ num2))
         if(result == compute):            
-            print("check4")
+            print("check div")
             continue
         else:
-            print("wrong compute4")
-            print("원래 값", hex(num1/ num2))
-            print("계산 값", (result))
+            print("wrong compute div")
+            print("원래 값:", hex(num1/ num2))
+            print("계산 값:", (result))
             f.close()
             exit(1)
 

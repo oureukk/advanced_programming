@@ -2,9 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
 #include "bi_function.h"
-
+#include "array.h"
 // 메모리 할당 및 초기화 함수 (calloc 사용)
 msg bi_new(pbigint* dst, int word_len) {
     if (*dst != NULL) {
@@ -60,18 +59,18 @@ msg bi_refine(pbigint* dst) {
 
 // 무작위 난수로 bigint 초기화 함수
 msg bi_get_random(pbigint* dst, int word_len) {
-    // 메모리 할당 및 초기화
     bi_new(dst, word_len);
 
-    // 부호 무작위 결정: 양수 또는 음수
-    (*dst)->sign = (rand() % 2 == 0) ? 1 : -1;
-
-    // 각 워드에 무작위 난수 값 할당
-    for (int i = 0; i < word_len; i++) {
-        (*dst)->a[i] = (msg)rand();  // 32비트 난수 생성
+    if (*dst == NULL || (*dst)->a == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        return 1;
     }
 
-    return (*dst)->a[word_len - 1];  // 마지막으로 생성된 난수를 반환
+    (*dst)->sign = (rand() % 2 == 0) ? 1 : -1; // 양수와 음수를 50% 확률로 설정
+    array_rand((*dst)->a, word_len);
+
+    bi_refine(dst); // 상위 0 제거
+    return 0;
 }
 
 // 진법에 맞춰 bigint 출력하는 함수
@@ -127,11 +126,9 @@ msg bi_set_from_string(pbigint* dst, const char* str, int base) { //const str을
         printf("Empty string\n");
         return 1;
     }
-
     // 워드 개수 계산 (32비트로 처리)
     size_t word_len = (str_len * 4 + 31) / 32;
     bi_new(dst, word_len);  // 새로운 메모리 할당
-
     // 부호 처리
     (*dst)->sign = 1;
     if (str[0] == '-') {
@@ -139,7 +136,6 @@ msg bi_set_from_string(pbigint* dst, const char* str, int base) { //const str을
         str++;  // 부호를 제외하고 숫자 처리
         str_len--;
     }
-
     // 각 워드에 값을 채움
     msg current_word = 0;
     int bit_position = 0;
@@ -154,7 +150,6 @@ msg bi_set_from_string(pbigint* dst, const char* str, int base) { //const str을
             printf("Invalid character in input string: %c\n", str[i]);
             return 1;  // 오류 반환
         }
-
         // base에 맞춰 숫자를 현재 워드에 저장
         current_word |= (digit_value << bit_position);
         bit_position += (base == 16 ? 4 : (base == 2 ? 1 : (base == 10 ? 4 : 3)));  // 진법에 따른 비트 이동
@@ -166,7 +161,6 @@ msg bi_set_from_string(pbigint* dst, const char* str, int base) { //const str을
             bit_position = 0;
         }
     }
-
     // 남은 값이 있으면 마지막 워드에 추가
     if (bit_position > 0) {
         (*dst)->a[--word_len] = current_word;

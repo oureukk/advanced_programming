@@ -1,167 +1,78 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "bi_function.h"
-#include "bi_arith.h"
-#include "bi_add.h"
+#include "bi_function.c"
+#include "bi_arith.c"
+#include "array.c"
 
-// bi_subtract 함수 테스트 함수
-void test_bi_subtract() {
-    pbigint a = NULL;
-    pbigint b = NULL;
-    pbigint result = NULL;
+void test_write(pbigint* pnum, FILE* fp) {
+    if ((*pnum)->sign == -1) {
+        fprintf(fp, "-");
+    }
 
-    // 첫 번째 테스트 케이스: 큰 수 - 작은 수 (양수 결과)
-    word a_arr[] = {0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0};
-    word b_arr[] = {0x11111111, 0x22222222, 0x33333333, 0x44444444, 0x0};
-    bi_set_from_array(&a, 1, 5, a_arr);
-    bi_set_from_array(&b, 1, 5, b_arr);
+    int first = 1; // 유효한 숫자 확인
+    for (int i = (*pnum)->word_len - 1; i >= 0; i--) {
+        if (first && (*pnum)->a[i] == 0) {
+            continue; // 처음 유효한 값 전까지 0 생략
+        }
+        first = 0;
+        fprintf(fp, "%x", (*pnum)->a[i]);
+    }
 
-    printf("Test Case 1: 큰 수 - 작은 수 (양수 결과)\n");
-    printf("A: ");
-    bi_print(&a, 16);
-    printf("B: ");
-    bi_print(&b, 16);
-    bi_subtract(&result, a, b);
-    printf("A - B = ");
-    bi_print(&result, 16);
+    if (first) { // 모든 값이 0인 경우
+        fprintf(fp, "0");
+    }
 
-    // 메모리 해제
-    bi_delete(&a);
-    bi_delete(&b);
-    bi_delete(&result);
-
-    // 두 번째 테스트 케이스: 작은 수 - 큰 수 (음수 결과)
-    word a_arr2[] = {0x11111111, 0x22222222, 0x33333333, 0x44444444, 0x0};
-    word b_arr2[] = {0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0};
-    bi_set_from_array(&a, 1, 5, a_arr2);
-    bi_set_from_array(&b, 1, 5, b_arr2);
-
-    printf("Test Case 2: 작은 수 - 큰 수 (음수 결과)\n");
-    printf("A: ");
-    bi_print(&a, 16);
-    printf("B: ");
-    bi_print(&b, 16);
-    bi_subtract(&result, a, b);
-    printf("A - B = ");
-    bi_print(&result, 16);
-
-    // 메모리 해제
-    bi_delete(&a);
-    bi_delete(&b);
-    bi_delete(&result);
-
-    // 세 번째 테스트 케이스: 같은 값 (결과가 0)
-    word a_arr3[] = {0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0};
-    word b_arr3[] = {0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0};
-    bi_set_from_array(&a, 1, 5, a_arr3);
-    bi_set_from_array(&b, 1, 5, b_arr3);
-
-    printf("Test Case 3: 같은 값 (결과가 0)\n");
-    printf("A: ");
-    bi_print(&a, 16);
-    printf("B: ");
-    bi_print(&b, 16);
-    bi_subtract(&result, a, b);
-    printf("A - B = ");
-    bi_print(&result, 16);
-
-    // 메모리 해제
-    bi_delete(&a);
-    bi_delete(&b);
-    bi_delete(&result);
+    fprintf(fp, " ");
 }
 
-void test_bi_add()
-{
-    pbigint a = NULL;
-    pbigint b = NULL;
-    pbigint result = NULL;
+void test_check(pbigint* pnum1, pbigint* pnum2, pbigint* result, int oper) {
+    const char* fname = "test.txt";
+    FILE* fp = fopen(fname, "a");
 
+    if (fp == NULL) {
+        perror("파일 열기 실패");
+        return;
+    }
+
+    test_write(pnum1, fp);
+
+    test_write(pnum2, fp);
     
-    word a_arr[] = { 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0 };
-    word b_arr[] = { 0x11111111, 0x22222222, 0x33333333, 0x44444444, 0x0 };
-    bi_set_from_array(&a, 1, 5, a_arr);
-    bi_set_from_array(&b, 1, 5, b_arr);
+    test_write(result, fp);
 
-    printf("Add Test 1\n");
-    printf("A: ");
-    bi_print(&a, 16);
-    printf("B: ");
-    bi_print(&b, 16);
-    bi_add(&result, a, b);
-    printf("A + B = ");
-    bi_print(&result, 16);
+    fprintf(fp, "%d\n", oper);
 
-    // 메모리 해제
-    bi_delete(&a);
-    bi_delete(&b);
-    bi_delete(&result);
-
-    // X2
-    word a_arr3[] = { 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0 };
-    word b_arr3[] = { 0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0 };
-    bi_set_from_array(&a, 1, 5, a_arr3);
-    bi_set_from_array(&b, 1, 5, b_arr3);
-
-    printf("Add Test 2\n");
-    printf("A: ");
-    bi_print(&a, 16);
-    printf("B: ");
-    bi_print(&b, 16);
-    bi_add(&result, a, b);
-    printf("A + B = ");
-    bi_print(&result, 16);
-
-    // 메모리 해제
-    bi_delete(&a);
-    bi_delete(&b);
-    bi_delete(&result);
+    printf("write OK\n");
+    fclose(fp);
 }
 
 int main() {
-    /*srand((unsigned int)time(NULL));
 
-    pbigint my_bigint = NULL;
-    pbigint temp_bigint = NULL;
-    pbigint temp2_bigint = NULL;
-    pbigint copy_bigint = NULL;
+    pbigint a = NULL;
+    pbigint b = NULL;
+    pbigint result1 = NULL;
+    pbigint result2 = NULL;
 
-    // 무작위 난수로 bigint 생성
-    bi_get_random(&my_bigint, 5);
+    int large_word_len = 25;
 
-    // 생성된 난수 출력
-    printf("16진수: ");
-    bi_print(&my_bigint, 16);
+    // 큰 정수 초기화
+    bi_get_random(&a, large_word_len);
+    bi_get_random(&b, large_word_len);
 
-    printf("2진수: ");
-    bi_print(&my_bigint, 2);
+    // 덧셈과 뺄셈 수행
+    bi_add(&result1, a, b);
+    bi_subtract(&result2, a, b);
 
-    // 배열로부터 설정
-    word array[5] = {0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321, 0x0};
-    bi_set_from_array(&temp_bigint, 1, 5, array);
-    bi_set_from_string(&temp2_bigint, "1A3F", 16);
+    // 결과를 파일에 기록
+    test_check(&a, &b, &result1, 1); // 덧셈 결과 기록
+    test_check(&a, &b, &result2, 2); // 뺄셈 결과 기록
 
-    printf("배열에서 설정된 bigint:\n");
-    bi_print(&temp_bigint, 16);
-    bi_print(&temp2_bigint, 16);
-
-    // bigint 복사
-    bi_assign(&copy_bigint, &temp_bigint);
-    printf("복사된 bigint:\n");
-    bi_print(&copy_bigint, 16);
-
-    // 동적으로 할당한 메모리 해제
-    bi_delete(&my_bigint);
-    bi_delete(&temp_bigint);
-    bi_delete(&temp2_bigint);
-    bi_delete(&copy_bigint);
-    */
-   
-    // bi_subtract 테스트 실행
-    test_bi_subtract();
-    test_bi_add();
-    
+    // 메모리 해제
+    bi_delete(&a);
+    bi_delete(&b);
+    bi_delete(&result1);
+    bi_delete(&result2);
 
     return 0;
 }

@@ -1,68 +1,94 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
+#include <string.h>
 #include "bi_struct.h"
-#include "bi_function.h"
-#include "bi_arith.h"
+#include "array.h"
 
-// 덧셈 함수
-void bi_add(pbigint* result, const pbigint a, const pbigint b) {
-    // 두 수의 부호가 같은 경우, 덧셈을 수행
-    if (a->sign == b->sign) {
-        int max_len = (a->word_len > b->word_len) ? a->word_len : b->word_len;
-        bi_new(result, max_len + 1);
-        (*result)->sign = a->sign;
+// Algorithm 5: ADD_ABC
+void ADD_ABC(msg A, msg B, msg c, msg* c_out, msg* C) {
+    msg sum = A + B; // A와 B 더하기
+    *c_out = 0;
 
-        uint64_t carry = 0;
-        for (int i = 0; i < max_len; i++) {
-            uint64_t a_i = i < a->word_len ? a->a[i] : 0;
-            uint64_t b_i = i < b->word_len ? b->a[i] : 0;
-            uint64_t sum = a_i + b_i + carry;
-            (*result)->a[i] = sum & 0xFFFFFFFF;
-            carry = sum >> 32;
-        }
+    if (sum < A) { // A + B에서 오버플로우 발생
+        *c_out = 1;
+    }
 
-        if (carry) {
-        (*result)->a[max_len] = carry; }
-        bi_refine(result);  // 불필요한 상위 0 제거
+    sum += c; // 캐리 더하기
+    if (sum < c) { // 캐리 추가로 오버플로우 발생
+        (*c_out)++;
+    }
+
+    *C = sum; // 최종 합계 저장
+}
+
+
+// Algorithm 6: ADDC
+void ADDC(const pbigint A, const pbigint B, pbigint* C) {
+    int n = A->word_len;
+    int m = B->word_len;
+    int max_len = (n > m) ? n : m;
+
+    // C 초기화 (캐리 고려해서 +1)
+    bi_new(C, max_len + 1);
+
+    msg carry = 0;
+    for (int j = 0; j < max_len; j++) {
+        msg a_val = (j < n) ? A->a[j] : 0; // A의 현재 워드
+        msg b_val = (j < m) ? B->a[j] : 0; // B의 현재 워드
+        ADD_ABC(a_val, b_val, carry, &carry, &((*C)->a[j]));
+    }
+
+    // 최상위 캐리를 저장
+    (*C)->a[max_len] = carry;
+
+    // 결과를 정리 (불필요한 상위 0 제거)
+    bi_refine(C);
+}
+
+
+
+// Algorithm 7: ADD
+void bi_add(const pbigint A, const pbigint B, pbigint* C) {
+    // A와 B 중 하나가 0일 경우
+    if (A->word_len == 0) {
+        bi_assign(C, &B);
+        return;
+    }
+    if (B->word_len == 0) {
+        bi_assign(C, &A);
+        return;
+    }
+
+    // 부호가 다를 경우 (양수 + 음수 또는 음수 + 양수)
+    if (A->sign > 0 && B->sign < 0) {
+        pbigint abs_B;
+        bi_new(&abs_B, B->word_len);
+        bi_assign(&abs_B, &B);
+        abs_B->sign = 1; // B를 절댓값으로 바꿈
+        // A - |B| 수행
+        // SUB(A, abs_B, C); // SUB 함수 호출 필요
+        bi_delete(&abs_B);
+        return;
+    }
+
+    if (A->sign < 0 && B->sign > 0) {
+        pbigint abs_A;
+        bi_new(&abs_A, A->word_len);
+        bi_assign(&abs_A, &A);
+        abs_A->sign = 1; // A를 절댓값으로 바꿈
+        // B - |A| 수행
+        // SUB(B, abs_A, C); // SUB 함수 호출 필요
+        bi_delete(&abs_A);
+        return;
+    }
+
+    // 부호가 같은 경우
+    if (A->sign < 0 && B->sign < 0) {
+        ADDC(A, B, C);
+        (*C)->sign = -1; // 결과 부호는 음수
     } else {
-        // 부호가 다른 경우, 뺄셈 함수를 호출
-        bi_subtract(result, a, b);
+        ADDC(A, B, C);
+        (*C)->sign = 1;  // 결과 부호는 양수
     }
-}
-
-// 절댓값 비교 함수
-int bi_compare_abs(const pbigint a, const pbigint b) {
-    if (a->word_len != b->word_len) {
-        return (a->word_len > b->word_len) ? 1 : -1;
-    }
-    for (int i = a->word_len - 1; i >= 0; i--) {
-        if (a->a[i] != b->a[i]) {
-            return (a->a[i] > b->a[i]) ? 1 : -1;
-        }
-    }
-    return 0;
-}
-
-// 뺄셈 함수
-void bi_subtract(pbigint* result, const pbigint a, const pbigint b) {
-    int cmp = bi_compare_abs(a, b);
-    const pbigint larger = (cmp >= 0) ? a : b;
-    const pbigint smaller = (cmp >= 0) ? b : a;
-    int sign = (cmp >= 0) ? a->sign : -a->sign;
-
-    bi_new(result, larger->word_len);
-    (*result)->sign = sign;
-
-    int borrow = 0;
-    for (int i = 0; i < larger->word_len; i++) {
-        uint64_t a_i = larger->a[i];
-        uint64_t b_i = (i < smaller->word_len) ? smaller->a[i] : 0;
-        uint64_t sub = a_i - b_i - borrow;
-        (*result)->a[i] = sub & 0xFFFFFFFF;
-        borrow = (a_i < b_i + borrow) ? 1 : 0;
-    }
-
-    bi_refine(result);
 }
 

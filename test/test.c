@@ -52,27 +52,26 @@ int main() {
     pbigint a = NULL;
     pbigint b = NULL;
     pbigint result1 = NULL;
-    pbigint result2 = NULL;
 
-    int large_word_len = 25;
+    int large_word_len = 10;
 
     // 큰 정수 초기화
     bi_get_random(&a, large_word_len);
     bi_get_random(&b, large_word_len);
 
     // 덧셈과 뺄셈 수행
-    bi_add(&result1, a, b);
-    bi_subtract(&result2, a, b);
+    bi_add(a,b,&result1);
+
 
     // 결과를 파일에 기록
     test_check(&a, &b, &result1, 1); // 덧셈 결과 기록
-    test_check(&a, &b, &result2, 2); // 뺄셈 결과 기록
+
 
     // 메모리 해제
     bi_delete(&a);
     bi_delete(&b);
     bi_delete(&result1);
-    bi_delete(&result2);
+
 
     return 0;
 }

@@ -13,14 +13,19 @@ msg bi_new(pbigint* dst, int word_len) {
         free(*dst);  // 기존 구조체 해제
     }
 
-    *dst = (pbigint)malloc(sizeof(bigint));  // 새로운 구조체 할당
-    (*dst)->word_len = word_len;
-    (*dst)->a = (msg*)calloc(word_len, sizeof(msg));  // 메모리 할당 및 0으로 초기화
-    if ((*dst)->a == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
-        exit(1);  // 프로그램 종료
+    *dst = (pbigint)calloc(1, sizeof(bigint));
+    if (*dst == NULL) {
+        fprintf(stderr, "bigint 구조체 메모리 할당 실패\n");
+        exit(1); // 프로그램 종료
     }
-    (*dst)->sign = 0;  // 부호 초기화
+    (*dst)->word_len = word_len;
+    (*dst)->a = (word*)calloc(word_len, sizeof(word));
+    if ((*dst)->a == NULL) {
+        fprintf(stderr, "bigint 배열 메모리 할당 실패\n");
+        free(*dst);
+        exit(1); // 프로그램 종료
+    }
+    (*dst)->sign = 0;
     return 0;
 }
 
@@ -49,6 +54,7 @@ msg bi_refine(pbigint* dst) {
     msg* new_a = (msg*)realloc((*dst)->a, new_word_len * sizeof(msg));
     if (new_a == NULL) {
         fprintf(stderr, "Memory reallocation failed\n");
+        bi_delete(dst);
         exit(1);  // 프로그램 종료
     }
 
@@ -177,4 +183,4 @@ msg bi_assign(pbigint* dst, const pbigint* src) { //const를 읽기전용으로
     memcpy((*dst)->a, (*src)->a, (*src)->word_len * sizeof(msg));
 
     return 0;
-}
+} // bi_function.c 파일

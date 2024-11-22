@@ -92,3 +92,26 @@ void bi_add(const pbigint A, const pbigint B, pbigint* C) {
     }
 }
 
+// 곱셈 연산
+void bi_mul(pbigint* result, const pbigint a, const pbigint b)
+{
+    bi_new(result, a-> word_len + b-> word_len);
+
+    (*result)->sign = (a->sign == b->sign) ? 1 : -1;
+
+    for (int i = 0; i < a->word_len; i++) {
+        uint64_t carry = 0;
+        for (int j = 0; j < b->word_len; j++) {
+            uint64_t a_i = i < a->word_len ? a->a[i] : 0;
+            uint64_t a_j = j < b->word_len ? b->a[j] : 0;
+            uint64_t tmp = a_i * a_j;
+            uint64_t sum = (*result)->a[i + j] + tmp + carry;
+            (*result)->a[i + j] = sum & 0xFFFFFFFF;
+            carry = sum >> 32;
+        }
+        if (carry) {
+            (*result)->a[i + b->word_len] += carry;
+        }
+    }
+    bi_refine(result);  
+}

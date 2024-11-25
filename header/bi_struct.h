@@ -5,7 +5,7 @@
 
 typedef uint32_t msg; // 메시지 타입 정의
 typedef uint32_t word; // 워드 타입 정의
-
+#define WORD_BITLEN 32
 // bigint 구조체 정의
 typedef struct {
     int sign;        // 부호: 1이면 양수, -1이면 음수

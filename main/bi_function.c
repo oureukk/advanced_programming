@@ -7,39 +7,36 @@
 // 메모리 할당 및 초기화 함수 (calloc 사용)
 msg bi_new(pbigint* dst, int word_len) {
     if (*dst != NULL) {
-        if ((*dst)->a != NULL) {
-            free((*dst)->a);  // 기존에 할당된 메모리가 있으면 해제
-        }
-        free(*dst);  // 기존 구조체 해제
+           bi_delete(dst);
     }
 
     *dst = (pbigint)calloc(1, sizeof(bigint));
     if (*dst == NULL) {
         fprintf(stderr, "bigint 구조체 메모리 할당 실패\n");
-        exit(1); // 프로그램 종료
+        return 1; // 프로그램 종료
     }
     (*dst)->word_len = word_len;
     (*dst)->a = (word*)calloc(word_len, sizeof(word));
     if ((*dst)->a == NULL) {
         fprintf(stderr, "bigint 배열 메모리 할당 실패\n");
         free(*dst);
-        exit(1); // 프로그램 종료
+        return 1; // 프로그램 종료
     }
     (*dst)->sign = 0;
     return 0;
 }
 
 // 메모리 해제 함수
-msg bi_delete(pbigint* dst) {
-    if (*dst != NULL) {
-        if ((*dst)->a != NULL) {
-            free((*dst)->a);  // 메모리 해제
-            (*dst)->a = NULL;  // 포인터를 NULL로 설정
-        }
-        free(*dst);  // 구조체 자체 해제
-        *dst = NULL; // 포인터 NULL 처리
-    }
-    return 0;
+void bi_delete(pbigint* dst) {
+    if (*dst == NULL) 
+        return;
+    #ifdef ZERORIZE
+        array_init((*x)->a, (*x)->wordlen);
+    #endif
+    free((*dst)->a);  // 메모리 해제        
+    free(*dst);  // 구조체 자체 해제
+    *dst = NULL; // 포인터 NULL 처리
+
 }
 
 // 메모리 재설정 함수
@@ -50,18 +47,22 @@ msg bi_refine(pbigint* dst) {
         new_word_len--;
     }
 
-    // 필요한 크기로 다시 할당
-    msg* new_a = (msg*)realloc((*dst)->a, new_word_len * sizeof(msg));
-    if (new_a == NULL) {
-        fprintf(stderr, "Memory reallocation failed\n");
-        bi_delete(dst);
-        exit(1);  // 프로그램 종료
+    // 배열의 길이가 변경되었다면 메모리 재할당
+    if (new_word_len != (*dst)->word_len) {
+        msg* new_a = (msg*)calloc(new_word_len , sizeof(msg));
+        if (new_a == NULL) {
+            fprintf(stderr, "Memory reallocation failed\n");
+            return 1;
+        }
+        memcpy(new_a, (*dst)->a, new_word_len * sizeof(msg));
+        free((*dst)->a);
+        (*dst)->a = new_a;
     }
 
-    (*dst)->a = new_a;  // 포인터 업데이트
     (*dst)->word_len = new_word_len;  // 워드 길이 업데이트
     return 0;
 }
+
 
 // 무작위 난수로 bigint 초기화 함수
 msg bi_get_random(pbigint* dst, int word_len) {
@@ -75,7 +76,6 @@ msg bi_get_random(pbigint* dst, int word_len) {
     (*dst)->sign = (rand() % 2 == 0) ? 1 : -1; // 양수와 음수를 50% 확률로 설정
     array_rand((*dst)->a, word_len);
 
-    bi_refine(dst); // 상위 0 제거
     return 0;
 }
 
@@ -184,3 +184,53 @@ msg bi_assign(pbigint* dst, const pbigint* src) { //const를 읽기전용으로
 
     return 0;
 } // bi_function.c 파일
+
+void bi_shift_left(pbigint* result, const pbigint A, int shift) {
+    if (shift == 0) {
+        bi_assign(result, &A);
+        return;
+    }
+
+    int word_shift = shift / WORD_BITLEN;   // 워드 단위 시프트
+    int bit_shift = shift % WORD_BITLEN;   // 워드 내 비트 시프트
+
+    bi_new(result, A->word_len + word_shift + 1); // 새로운 공간 할당
+
+    for (int i = 0; i < word_shift; i++) {
+        (*result)->a[i] = 0; // 워드 단위로 0 초기화
+    }
+
+    for (int i = 0; i < A->word_len; i++) {
+        (*result)->a[i + word_shift] = A->a[i];
+    }
+
+    if (bit_shift > 0) {
+        msg carry = 0;
+        for (int i = 0; i < (*result)->word_len; i++) {
+            msg current = (*result)->a[i];
+            (*result)->a[i] = (current << bit_shift) | carry; // 비트 이동
+            carry = current >> (WORD_BITLEN - bit_shift);    // 캐리 값 저장
+        }
+    }
+
+    bi_refine(result); // 상위 0 제거
+}
+void bi_shift_right(pbigint* result, const pbigint src, int shift) {
+    // 단순한 예시 구현
+    int word_shift = shift / WORD_BITLEN; // 워드 단위로의 시프트
+    int bit_shift = shift % WORD_BITLEN; // 비트 단위로의 시프트
+
+    if (!*result) bi_new(result, src->word_len); // 결과 저장공간 확보
+
+    // 시프트 과정 구현
+    for (int i = 0; i < src->word_len - word_shift; i++) {
+        (*result)->a[i] = src->a[i + word_shift] >> bit_shift;
+        if (i + word_shift + 1 < src->word_len)
+            (*result)->a[i] |= src->a[i + word_shift + 1] << (WORD_BITLEN - bit_shift);
+    }
+
+    // 상위 인덱스의 남은 부분 처리
+    for (int i = src->word_len - word_shift; i < src->word_len; i++) {
+        (*result)->a[i] = 0;
+    }
+}

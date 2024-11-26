@@ -27,9 +27,18 @@ void test_write(pbigint* pnum, FILE* fp) {
 }
 
 void test_check(pbigint* pnum1, pbigint* pnum2, pbigint* result, int oper) {
-    const char* fname = "test.txt";
-    FILE* fp = fopen(fname, "a");
+    const char* fname = "test.txt"; 
+    static int first_call = 1;
+    FILE* fp;
+    
+    if (first_call) {
+        fopen_s(&fp, fname, "w");  
+        first_call = 0; 
+    }
+    else 
+        fopen_s(&fp, fname, "a");  
 
+    
     if (fp == NULL) {
         perror("파일 열기 실패");
         return;

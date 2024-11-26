@@ -25,10 +25,10 @@ int bi_compare_abs(const pbigint A, const pbigint B) {
 
 // Algorithm 5: ADD_ABC
 void ADD_ABC(msg A, msg B, msg c, msg* c_out, msg* C) {
-    msg sum = A + B; // A와 B 더하기
-    printf("Initial sum: %x, A: %x, B: %x\n", sum, A, B);
-    *c_out = 0;
 
+    msg sum = A + B; // A와 B 더하기
+    printf("Initial sum: %x, A: %08x, B: %08x\n", sum, A, B);
+    *c_out = 0;
     if (sum < A) { // A + B에서 오버플로우 발생
         *c_out = 1;
         printf("Overflow detected after A+B\n");
@@ -54,9 +54,9 @@ void ADDC(const pbigint A, const pbigint B, pbigint* C) {
     bi_new(C, max_len + 1);  // 최대 워드 길이 + 1 워드를 할당
 
     msg carry = 0;  // 초기 캐리 값
-
     for (int j = 0; j < min_len; j++) {
         // 워드 단위로 덧셈 수행
+
         ADD_ABC(A->a[j], B->a[j], carry, &carry, &(*C)->a[j]);
     }
 
@@ -64,7 +64,8 @@ void ADDC(const pbigint A, const pbigint B, pbigint* C) {
         // 길이가 긴 쪽의 나머지 워드 처리
         if (n > m) {
             ADD_ABC(A->a[j], 0, carry, &carry, &(*C)->a[j]);
-        } else {
+        }
+        else {
             ADD_ABC(0, B->a[j], carry, &carry, &(*C)->a[j]);
         }
     }
@@ -73,7 +74,8 @@ void ADDC(const pbigint A, const pbigint B, pbigint* C) {
     if (carry != 0) {
         (*C)->a[max_len] = carry;
         (*C)->word_len = max_len + 1;
-    } else {
+    }
+    else {
         (*C)->word_len = max_len;
     }
 }
@@ -96,7 +98,8 @@ void bi_add(const pbigint A, const pbigint B, pbigint* C) {
         if (bi_compare_abs(A, B) >= 0) {
             SUBC(A, B, C);       // A >= B인 경우 A - |B|
             (*C)->sign = 1;
-        } else {
+        }
+        else {
             SUBC(B, A, C);       // A < B인 경우 |B| - A
             (*C)->sign = -1;
         }
@@ -108,7 +111,8 @@ void bi_add(const pbigint A, const pbigint B, pbigint* C) {
         if (bi_compare_abs(A, B) > 0) {
             SUBC(A, B, C);       // |A| > B인 경우 |A| - B
             (*C)->sign = -1;
-        } else {
+        }
+        else {
             SUBC(B, A, C);       // |A| <= B인 경우 B - |A|
             (*C)->sign = 1;
         }
@@ -116,12 +120,12 @@ void bi_add(const pbigint A, const pbigint B, pbigint* C) {
     }
 
     // 부호가 같은 경우
-    if (A->sign == B->sign ) {
-        if(A->word_len >= B->word_len){
-            ADDC(A,B,C);
+    if (A->sign == B->sign) {
+        if (A->word_len >= B->word_len) {
+            ADDC(A, B, C);
         }
-        else{
-            ADDC(B,A,C);
+        else {
+            ADDC(B, A, C);
         }
         (*C)->sign = A->sign;
     }
@@ -165,7 +169,7 @@ void SUBC(const pbigint A, const pbigint B, pbigint* C) {
     }
 
     (*C)->word_len = n;      // 결과의 워드 길이 설정
-    bi_refine(C);            // 상위 0 제거
+    bi_refine(C,1);            // 상위 0 제거
 }
 
 void SUB(const pbigint A, const pbigint B, pbigint* C) {
@@ -203,7 +207,8 @@ void SUB(const pbigint A, const pbigint B, pbigint* C) {
     if (A->sign > 0 && B->sign > 0) {
         if (A->word_len > B->word_len || (A->word_len == B->word_len && A->a[A->word_len - 1] >= B->a[B->word_len - 1])) {
             SUBC(A, B, C);
-        } else {
+        }
+        else {
             SUBC(B, A, C);
             (*C)->sign = -1;  // 결과는 음수
         }
@@ -214,7 +219,8 @@ void SUB(const pbigint A, const pbigint B, pbigint* C) {
     if (A->sign < 0 && B->sign < 0) {
         if (A->word_len > B->word_len || (A->word_len == B->word_len && A->a[A->word_len - 1] <= B->a[B->word_len - 1])) {
             SUBC(B, A, C);
-        } else {
+        }
+        else {
             SUBC(A, B, C);
             (*C)->sign = -1;  // 결과는 음수
         }
@@ -223,14 +229,20 @@ void SUB(const pbigint A, const pbigint B, pbigint* C) {
 
     // Case: A > 0 and B < 0 (Addition)
     if (A->sign > 0 && B->sign < 0) {
+        B->sign = 1;
         bi_add(A, B, C);
+        B->sign = -1;
+
         return;
     }
 
     // Case: A < 0 and B > 0 (Addition with sign)
     if (A->sign < 0 && B->sign > 0) {
+        A->sign = 1;
         bi_add(A, B, C);
         (*C)->sign = -1;  // 결과는 음수
+        A->sign = -1;
+
         return;
     }
 }
@@ -299,13 +311,14 @@ void MULC(const pbigint A, const pbigint B, pbigint* C) {
 
             // 상위 워드 더하기
             ADD_ABC((*C)->a[i + j + 1], C_high, carry, &carry, &(*C)->a[i + j + 1]);
+
         }
     }
 
-    bi_refine(C);  // 상위 0 제거
+    bi_refine(C,1);  // 상위 0 제거
 }
 
-void MUL(const pbigint A, const pbigint B, pbigint* C) {
+void MUL(const pbigint A, const pbigint B, pbigint* C){
     // A = 0 or B = 0
     if (A->word_len == 0 || B->word_len == 0) {
         bi_new(C, 1);
@@ -327,9 +340,10 @@ void MUL(const pbigint A, const pbigint B, pbigint* C) {
         (*C)->sign = A->sign * B->sign;
         return;
     }
+    printf("%d\n",A);
 
     // 일반 곱셈
-    pbigint abs_A, abs_B;
+    pbigint abs_A = NULL , abs_B = NULL;
     bi_new(&abs_A, A->word_len);
     bi_new(&abs_B, B->word_len);
     bi_assign(&abs_A, &A);
@@ -370,8 +384,8 @@ void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
         }
     }
 
-    bi_refine(Q);
-    bi_refine(R);
+    bi_refine(Q,1);
+    bi_refine(R,1);
 }
 
 // DIVC implementation

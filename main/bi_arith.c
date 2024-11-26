@@ -169,7 +169,7 @@ void SUBC(const pbigint A, const pbigint B, pbigint* C) {
     }
 
     (*C)->word_len = n;      // 결과의 워드 길이 설정
-    bi_refine(C,1);            // 상위 0 제거
+    bi_refine(C);            // 상위 0 제거
 }
 
 void SUB(const pbigint A, const pbigint B, pbigint* C) {
@@ -315,7 +315,7 @@ void MULC(const pbigint A, const pbigint B, pbigint* C) {
         }
     }
 
-    bi_refine(C,1);  // 상위 0 제거
+    bi_refine(C);  // 상위 0 제거
 }
 
 void MUL(const pbigint A, const pbigint B, pbigint* C){
@@ -384,8 +384,8 @@ void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
         }
     }
 
-    bi_refine(Q,1);
-    bi_refine(R,1);
+    bi_refine(Q);
+    bi_refine(R);
 }
 
 // DIVC implementation

@@ -302,16 +302,24 @@ void MULC(const pbigint A, const pbigint B, pbigint* C) {
 
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < m; j++) {
+
             word C_high, C_low;
+            // A[i] * B[j]의 곱셈 결과를 C_high, C_low로 분리
             MUL_AB(A->a[i], B->a[j], &C_high, &C_low);
 
-            // 하위 워드 더하기
-            msg carry = 0;
-            ADD_ABC((*C)->a[i + j], C_low, carry, &carry, &(*C)->a[i + j]);
+            msg carry = 0;  // 전체 연산에서 사용할 캐리
 
-            // 상위 워드 더하기
+            // 하위 워드 더하기
+            ADD_ABC((*C)->a[i + j], C_low, carry, &carry, &(*C)->a[i + j]);
+            // 상위 워드 더하기 (이전 carry 포함)
             ADD_ABC((*C)->a[i + j + 1], C_high, carry, &carry, &(*C)->a[i + j + 1]);
 
+            // 추가 캐리를 상위 워드로 전파
+            int k = i + j + 2;  // 상위 워드 시작 인덱스
+            while (carry > 0) { // 캐리가 0이 될 때까지 전파
+                ADD_ABC((*C)->a[k], 0, carry, &carry, &(*C)->a[k]);
+                k++;
+            }
         }
     }
 

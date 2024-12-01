@@ -4,10 +4,11 @@
 #include <time.h>
 #include "bi_function.h"
 #include "array.h"
+
 // 메모리 할당 및 초기화 함수 (calloc 사용)
 msg bi_new(pbigint* dst, int word_len) {
     if (*dst != NULL) {
-           bi_delete(dst);
+        bi_delete(dst);
     }
 
     *dst = (pbigint)calloc(1, sizeof(bigint));
@@ -28,11 +29,11 @@ msg bi_new(pbigint* dst, int word_len) {
 
 // 메모리 해제 함수
 void bi_delete(pbigint* dst) {
-    if (*dst == NULL) 
-        return;
-    #ifdef ZERORIZE
-        array_init((*x)->a, (*x)->wordlen);
-    #endif
+    if (*dst == NULL)
+        return 0;
+#ifdef ZERORIZE
+    array_init((*x)->a, (*x)->wordlen);
+#endif
     free((*dst)->a);  // 메모리 해제        
     free(*dst);  // 구조체 자체 해제
     *dst = NULL; // 포인터 NULL 처리
@@ -40,16 +41,20 @@ void bi_delete(pbigint* dst) {
 }
 
 // 메모리 재설정 함수
-msg bi_refine(pbigint* dst) {
+msg bi_refine(pbigint* dst ) {
     // 상위 워드가 0인 경우 유효 워드 길이를 계산
     int new_word_len = (*dst)->word_len;
+
     while (new_word_len > 1 && (*dst)->a[new_word_len - 1] == 0) {
         new_word_len--;
     }
+    
+
+
 
     // 배열의 길이가 변경되었다면 메모리 재할당
     if (new_word_len != (*dst)->word_len) {
-        msg* new_a = (msg*)calloc(new_word_len , sizeof(msg));
+        msg* new_a = (msg*)calloc(new_word_len, sizeof(msg));
         if (new_a == NULL) {
             fprintf(stderr, "Memory reallocation failed\n");
             return 1;
@@ -74,6 +79,8 @@ msg bi_get_random(pbigint* dst, int word_len) {
     }
 
     (*dst)->sign = (rand() % 2 == 0) ? 1 : -1; // 양수와 음수를 50% 확률로 설정
+    //(*dst)->sign = 1;
+
     array_rand((*dst)->a, word_len);
 
     return 0;
@@ -98,8 +105,9 @@ msg bi_print(pbigint* dst, int base) {
         first = 0;
 
         if (base == 16) {
-            printf("%x", (*dst)->a[i]);  // 16진법
-        }  else if (base == 2) {
+            printf("%08x", (*dst)->a[i]);  // 16진법
+        }
+        else if (base == 2) {
             for (int j = 31; j >= 0; j--) {
                 printf("%d", ((*dst)->a[i] >> j) & 1);
             }
@@ -150,9 +158,11 @@ msg bi_set_from_string(pbigint* dst, const char* str, int base) { //const str을
 
         if (str[i] >= '0' && str[i] <= '9') {
             digit_value = str[i] - '0';
-        } else if (base == 16 && ((str[i] >= 'a' && str[i] <= 'f') || (str[i] >= 'A' && str[i] <= 'F'))) {
+        }
+        else if (base == 16 && ((str[i] >= 'a' && str[i] <= 'f') || (str[i] >= 'A' && str[i] <= 'F'))) {
             digit_value = (str[i] >= 'a') ? 10 + (str[i] - 'a') : 10 + (str[i] - 'A');
-        } else {
+        }
+        else {
             printf("Invalid character in input string: %c\n", str[i]);
             return 1;  // 오류 반환
         }
@@ -193,27 +203,27 @@ void bi_shift_left(pbigint* result, const pbigint A, int shift) {
 
     int word_shift = shift / WORD_BITLEN;   // 워드 단위 시프트
     int bit_shift = shift % WORD_BITLEN;   // 워드 내 비트 시프트
-
-    bi_new(result, A->word_len + word_shift + 1); // 새로운 공간 할당
-
+    pbigint tmp = NULL;
+    bi_new(&tmp, A->word_len + word_shift + 1); // 새로운 공간 할당
+    tmp->sign = 1;
     for (int i = 0; i < word_shift; i++) {
-        (*result)->a[i] = 0; // 워드 단위로 0 초기화
+        (tmp)->a[i] = 0; // 워드 단위로 0 초기화
     }
 
     for (int i = 0; i < A->word_len; i++) {
-        (*result)->a[i + word_shift] = A->a[i];
+        (tmp)->a[i + word_shift] = A->a[i];
     }
 
     if (bit_shift > 0) {
         msg carry = 0;
-        for (int i = 0; i < (*result)->word_len; i++) {
-            msg current = (*result)->a[i];
-            (*result)->a[i] = (current << bit_shift) | carry; // 비트 이동
+        for (int i = 0; i < (tmp)->word_len; i++) {
+            msg current = (tmp)->a[i];
+            (tmp)->a[i] = (current << bit_shift) | carry; // 비트 이동
             carry = current >> (WORD_BITLEN - bit_shift);    // 캐리 값 저장
         }
     }
-
-    bi_refine(result); // 상위 0 제거
+    bi_refine(&tmp); // 상위 0 제거
+    bi_assign( result, &tmp);
 }
 void bi_shift_right(pbigint* result, const pbigint src, int shift) {
     // 단순한 예시 구현

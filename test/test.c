@@ -94,7 +94,7 @@ void test_ran()
 }
 
 int main() {
-
+    srand((unsigned int)time(NULL));
     for (int i = 0; i < 10; i++)
     {
         test_ran();

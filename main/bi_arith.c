@@ -27,21 +27,17 @@ int bi_compare_abs(const pbigint A, const pbigint B) {
 void ADD_ABC(msg A, msg B, msg c, msg* c_out, msg* C) {
 
     msg sum = A + B; // A와 B 더하기
-    printf("Initial sum: %x, A: %08x, B: %08x\n", sum, A, B);
     *c_out = 0;
     if (sum < A) { // A + B에서 오버플로우 발생
-        *c_out = 1;
-        printf("Overflow detected after A+B\n");
+        *c_out += 1;
     }
 
     sum += c; // 캐리 더하기
     if (sum < c) { // 캐리 추가로 오버플로우 발생
         *c_out += 1;
-        printf("Overflow detected after adding carry\n");
     }
 
     *C = sum; // 최종 합계 저장오
-    printf("Final sum: %x, Carry out: %d\n", *C, *c_out);
 }
 
 
@@ -269,9 +265,11 @@ void mul_single_word(word A, word B, pbigint* result) {
     word C1 = A1 * B1;                        // 상위 워드 곱셈
 
     // 결과 병합
+
     word T = C0;
     C0 += (T0 << half_word);                  // T0를 하위 워드에 병합
     C1 += (T1 << half_word) + (T0 >> half_word) + (C0 < T); // 상위 워드 병합
+
 
     // 결과 저장
     (*result)->a[0] = C0;                     // 하위 워드 저장
@@ -348,7 +346,6 @@ void MUL(const pbigint A, const pbigint B, pbigint* C){
         (*C)->sign = A->sign * B->sign;
         return;
     }
-    printf("%d\n",A);
 
     // 일반 곱셈
     pbigint abs_A = NULL , abs_B = NULL;
@@ -356,8 +353,7 @@ void MUL(const pbigint A, const pbigint B, pbigint* C){
     bi_new(&abs_B, B->word_len);
     bi_assign(&abs_A, &A);
     bi_assign(&abs_B, &B);
-    abs_A->sign = 1;
-    abs_B->sign = 1;
+
 
     MULC(abs_A, abs_B, C);
     (*C)->sign = A->sign * B->sign;
@@ -375,20 +371,30 @@ void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
         return;
     }
 
+    pbigint R_tmp = NULL;
     int n = A->word_len * WORD_BITLEN;  // 전체 비트 길이 계산
     bi_new(Q, A->word_len);
-    bi_new(R, 1);
-    (*R)->a[0] = 0;
+    bi_new(R, B->word_len);
+    bi_new(&R_tmp, B->word_len);
 
+    (*R)->a[0] = 0;
+    (*R)->sign = 1;
+    (*Q)->sign = A->sign * B->sign;
+    A->sign = 1;
+    B->sign = 1;
+    R_tmp->sign = 1;
     for (int i = n - 1; i >= 0; i--) {
         bi_shift_left(R, *R, 1);  // R <<= 1
         if ((A->a[i / WORD_BITLEN] >> (i % WORD_BITLEN)) & 1) {
             (*R)->a[0] |= 1;  // R += (A[i] << 0)
         }
 
-        if (bi_compare_abs(*R, B) >= 0) {
-            SUB(*R, B, R);  // R -= B
-            (*Q)->a[i / WORD_BITLEN] |= (1 << (i % WORD_BITLEN));  // Q[i] = 1
+        if (bi_compare_abs(*R, B) >= 0) {  
+
+            (*Q)->a[i / WORD_BITLEN] ^= (1 << (i % WORD_BITLEN));  // Q[i] = 1
+
+            SUB(*R, B, &R_tmp);  // R -= B
+            bi_assign(R, &R_tmp);
         }
     }
 
@@ -398,11 +404,10 @@ void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
 
 // DIVC implementation
 void DIVC(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
-    if (bi_compare_abs(A, B) < 0) {
+    if (A->word_len == 0 || B->word_len == 0) {
         bi_new(Q, 1);
-        bi_new(R, A->word_len);
-        bi_assign(R, &A);
         (*Q)->a[0] = 0;
+        (*Q)->sign = 1;
         return;
     }
 
@@ -411,15 +416,37 @@ void DIVC(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
         k++;
     }
 
-    pbigint A_prime, B_prime;
+
+
+    // A = ±1
+    if (A->word_len == 1 && A->a[0] == 1) {
+        bi_assign(Q, &B);
+        (*Q)->sign = A->sign * B->sign;
+        return;
+    }
+
+    // B = ±1
+    if (B->word_len == 1 && B->a[0] == 1) {
+        bi_assign(Q, &A);
+        (*Q)->sign = A->sign * B->sign;
+        return;
+    }
+
+    pbigint A_prime = NULL;
+    pbigint B_prime = NULL;
     bi_new(&A_prime, A->word_len);
     bi_new(&B_prime, B->word_len);
-    bi_shift_left(&A_prime, A, k);  // A' = A * 2^k
-    bi_shift_left(&B_prime, B, k);  // B' = B * 2^k
+    bi_assign(&A_prime, &A);
+    bi_assign(&B_prime, &B);
+    //bi_shift_left(&A_prime, A, k);  // A' = A * 2^k
+    //bi_shift_left(&B_prime, B, k);  // B' = B * 2^k
+    A_prime->sign = A->sign;
+    B_prime->sign = B->sign;
 
     div_long_binary(A_prime, B_prime, Q, R);  // Use binary division on A' and B'
 
-    bi_shift_right(R, *R, k);  // R = R' / 2^k
+
+    //bi_shift_right(R, *R, k);  // R = R' / 2^k
 
     bi_delete(&A_prime);
     bi_delete(&B_prime);

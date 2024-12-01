@@ -57,6 +57,7 @@ void test_check(pbigint* pnum1, pbigint* pnum2, pbigint* result, int oper) {
 }
 
 
+
 void test_ran()
 {
     pbigint a = NULL;
@@ -64,25 +65,31 @@ void test_ran()
     pbigint result1 = NULL;
     pbigint result2 = NULL;
 
-    int large_word_len = 1920/sizeof(word);
+    int large_word_len = 1920 / sizeof(word);
+    //1920/sizeof(word)
 
     // 큰 정수 초기화
     bi_get_random(&a, large_word_len);
     bi_get_random(&b, large_word_len);
 
-     //덧셈과 뺄셈 수행
+    //덧셈과 뺄셈 수행
     bi_add(a, b, &result1);
     test_check(&a, &b, &result1, 1); // 덧셈 결과 기록
 
     SUB(a, b, &result1);
     test_check(&a, &b, &result1, 2); 
 
-    //MUL(a, b, &result1);
-    //test_check(&a, &b, &result1, 3);
+    MUL(a, b, &result1);
+    test_check(&a, &b, &result1, 3);
+
+    DIVC(a, b, &result1, &result2);
+    test_check(&a, &b, &result1, 4);
+
     // 메모리 해제
     bi_delete(&a);
     bi_delete(&b);
     bi_delete(&result1);
+    bi_delete(&result2);
 
 }
 
@@ -91,7 +98,7 @@ int main() {
     for (int i = 0; i < 10; i++)
     {
         test_ran();
-    }
 
+    }
     return 0;
 }

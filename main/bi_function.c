@@ -194,7 +194,28 @@ msg bi_assign(pbigint* dst, const pbigint* src) { //const를 읽기전용으로
 
     return 0;
 } // bi_function.c 파일
+void bi_assign_kara(pbigint* dst, const pbigint src) {
+    if (src == NULL || src->word_len == 0) {
+        fprintf(stderr, "Error: Source bigint is NULL or invalid\n");
+        return;
+    }
 
+    if (*dst != NULL) {
+        bi_delete(dst);
+    }
+
+    bi_new(dst, src->word_len); // 메모리 재할당
+    if (*dst == NULL) {
+        fprintf(stderr, "Error: Memory allocation for dst failed\n");
+        return;
+    }
+
+    (*dst)->sign = src->sign;
+
+    for (int i = 0; i < src->word_len; i++) {
+        (*dst)->a[i] = src->a[i];
+    }
+}
 void bi_shift_left(pbigint* result, const pbigint A, int shift) {
     if (shift == 0) {
         bi_assign(result, &A);
@@ -240,7 +261,7 @@ void bi_shift_right(pbigint* result, const pbigint src, int shift) {
     }
 
     // 상위 인덱스의 남은 부분 처리
-    for (int i = src->word_len - word_shift; i < src->word_len; i++) {
-        (*result)->a[i] = 0;
+    bi_refine(result);
+
     }
 }

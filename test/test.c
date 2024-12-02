@@ -82,6 +82,9 @@ void test_ran()
     MUL(a, b, &result1);
     test_check(&a, &b, &result1, 3);
 
+    MUL_kara(a, b, &result1);
+    test_check(&a, &b, &result1, 3);
+    
     DIVC(a, b, &result1, &result2);
     test_check(&a, &b, &result1, 4);
 

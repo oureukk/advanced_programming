@@ -18,6 +18,7 @@ void mul_single_word(word A, word B, pbigint* result);
 void MUL_AB(word A, word B, word* C_high, word* C_low);
 void MULC(const pbigint A, const pbigint B, pbigint* C);
 void MUL(const pbigint A, const pbigint B, pbigint* C);
+void MUL_kara(const pbigint x, const pbigint y, pbigint* z);
 
 void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R);
 void DIVC(const pbigint A, const pbigint B, pbigint* Q, pbigint* R);

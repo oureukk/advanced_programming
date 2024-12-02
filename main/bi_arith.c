@@ -361,6 +361,126 @@ void MUL(const pbigint A, const pbigint B, pbigint* C){
     bi_delete(&abs_A);
     bi_delete(&abs_B);
 }
+void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
+
+    if (x->word_len == 0 || y->word_len == 0) {
+    bi_new(z, 1);
+    (*z)->a[0] = 0;
+    (*z)->sign = 1;
+    return;
+    }
+
+    int n = x->word_len;
+    int m = y->word_len;
+
+    // 기본 곱셈 처리
+    if (n <= 1 || m <= 1) {
+        MULC(x, y, z);
+        return;
+    }
+
+    bi_new(z, n + m);
+    if (*z == NULL) {
+        fprintf(stderr, "Error: Memory allocation for z failed\n");
+        return;
+    }
+    
+    int l = ((n >= m ? n : m) + 1) / 2;
+
+    // 중간 변수 초기화
+    pbigint A1 = NULL, A0 = NULL, B1 = NULL, B0 = NULL, C = NULL;
+    pbigint T1 = NULL, T0 = NULL;
+    pbigint S1 = NULL, S0 = NULL, S = NULL;
+
+    bi_new(&A1, x->word_len - l);
+    bi_new(&A0, l);
+    bi_new(&B1, y->word_len - l);
+    bi_new(&B0, l);
+    bi_new(&T1, n+m);
+    bi_new(&T0, n+m);
+    bi_new(&S1, l);
+    bi_new(&S0, l);
+    bi_new(&S, n+m);
+    bi_new(&C, n+m);
+
+    // A1 = x >> 1  
+    bi_assign_kara(&A1, x);
+    bi_shift_right(&A1, x, l * WORD_BITLEN);
+    
+    bi_print(&A1, 16);
+    
+    // A0 = x % (2^l)
+    bi_assign_kara(&A0, x);
+    for (int i = l; i < A0->word_len; i++) {
+        A0->a[i] = 0;  // 상위 워드를 0으로 초기화
+    }
+    bi_refine(&A0);
+
+
+    // B1 = y >> l
+    bi_assign_kara(&B1, y);
+    bi_shift_right(&B1, y, l * WORD_BITLEN);
+
+    // B0 = y % (2^l)
+    bi_assign_kara(&B0, y);
+    for (int i = l; i < B0->word_len; i++) {
+        B0->a[i] = 0;  // 상위 워드를 0으로 초기화
+    }
+    bi_refine(&B0);
+
+
+    MULC(A1, B1, &T1);
+    MULC(A0, B0, &T0);
+    
+    // z = T1 << (2 * l)
+    bi_shift_left(&T1, T1, 2 * l * WORD_BITLEN);
+    bi_assign_kara(&C, T1);
+    
+
+    pbigint sum1=NULL;
+    bi_new(&sum1, n + m);
+    ADDC(C, T0, &sum1);
+    
+
+    SUBC(A0, A1, &S1);
+    S1->sign = 1;
+
+    SUBC(B1, B0, &S0);
+    S0->sign = 1;
+    
+    MUL(S1, S0, &S);
+
+
+    pbigint sum2=NULL,sum3=NULL;
+    bi_new(&sum2, n + m);
+    bi_new(&sum3, n + m);
+
+    bi_add(T1,S,&sum2);
+    ADDC(T0,sum2,&sum3);
+    // C += S << l
+    
+    pbigint ShiftS=NULL;
+    bi_new(&ShiftS, n + m );
+    bi_shift_left(&ShiftS, sum3, l * WORD_BITLEN);
+
+    ADDC(sum1, ShiftS, z);  // 최종 결과를 z에 저장
+
+    (*z)->sign = x->sign * y->sign;
+    
+    bi_delete(&A1);
+    bi_delete(&A0);
+    bi_delete(&B1);
+    bi_delete(&B0);
+    bi_delete(&T1);
+    bi_delete(&T0);
+    bi_delete(&S);
+    bi_delete(&S1);
+    bi_delete(&S0);
+    bi_delete(&C);
+    bi_delete(&sum1);
+    bi_delete(&sum2);
+    bi_delete(&sum3);
+}
 // Binary Long Division
 void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
     if (bi_compare_abs(A, B) < 0) {

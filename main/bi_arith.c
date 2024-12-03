@@ -405,10 +405,8 @@ void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
 
     // A1 = x >> 1  
     bi_assign_kara(&A1, x);
-    bi_shift_right(&A1, x, l * WORD_BITLEN);
-    
-    bi_print(&A1, 16);
-    
+    bi_shift_right(&A1, l);
+
     // A0 = x % (2^l)
     bi_assign_kara(&A0, x);
     for (int i = l; i < A0->word_len; i++) {
@@ -416,10 +414,9 @@ void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
     }
     bi_refine(&A0);
 
-
     // B1 = y >> l
     bi_assign_kara(&B1, y);
-    bi_shift_right(&B1, y, l * WORD_BITLEN);
+    bi_shift_right(&B1, l);
 
     // B0 = y % (2^l)
     bi_assign_kara(&B0, y);
@@ -431,10 +428,12 @@ void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
 
     MULC(A1, B1, &T1);
     MULC(A0, B0, &T0);
+
     
+
     // z = T1 << (2 * l)
-    bi_shift_left(&T1, T1, 2 * l * WORD_BITLEN);
     bi_assign_kara(&C, T1);
+    bi_shift_left(&C, C, 2 * l * WORD_BITLEN);
     
 
     pbigint sum1=NULL;
@@ -447,15 +446,15 @@ void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
 
     SUBC(B1, B0, &S0);
     S0->sign = 1;
-    
+
     MUL(S1, S0, &S);
 
 
     pbigint sum2=NULL,sum3=NULL;
-    bi_new(&sum2, n + m);
+    bi_new(&sum2, n + 1);
     bi_new(&sum3, n + m);
 
-    bi_add(T1,S,&sum2);
+    ADDC(T1,S,&sum2);
     ADDC(T0,sum2,&sum3);
     // C += S << l
     
@@ -464,8 +463,8 @@ void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
     bi_shift_left(&ShiftS, sum3, l * WORD_BITLEN);
 
     ADDC(sum1, ShiftS, z);  // 최종 결과를 z에 저장
-
     (*z)->sign = x->sign * y->sign;
+
     
     bi_delete(&A1);
     bi_delete(&A0);
@@ -480,6 +479,7 @@ void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
     bi_delete(&sum1);
     bi_delete(&sum2);
     bi_delete(&sum3);
+    bi_delete(&ShiftS);
 }
 // Binary Long Division
 void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {

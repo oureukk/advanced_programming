@@ -246,22 +246,34 @@ void bi_shift_left(pbigint* result, const pbigint A, int shift) {
     bi_refine(&tmp); // 상위 0 제거
     bi_assign( result, &tmp);
 }
-void bi_shift_right(pbigint* result, const pbigint src, int shift) {
-    // 단순한 예시 구현
-    int word_shift = shift / WORD_BITLEN; // 워드 단위로의 시프트
-    int bit_shift = shift % WORD_BITLEN; // 비트 단위로의 시프트
+void bi_shift_right(pbigint* x, int shift) 
+{   
+    if (shift < 0) {
+        fprintf(stderr, "Error: shift is negative'\n");
+        return;
+    }
+    if (shift >= (*x)->word_len)
+        return;
+    
+    int new_word_len = (*x)->word_len - shift;
 
-    if (!*result) bi_new(result, src->word_len); // 결과 저장공간 확보
-
-    // 시프트 과정 구현
-    for (int i = 0; i < src->word_len - word_shift; i++) {
-        (*result)->a[i] = src->a[i + word_shift] >> bit_shift;
-        if (i + word_shift + 1 < src->word_len)
-            (*result)->a[i] |= src->a[i + word_shift + 1] << (WORD_BITLEN - bit_shift);
+    for (int i = 0; i < new_word_len; i++) 
+    {
+        (*x)->a[i] = (*x)->a[i + shift];
+    }
+    for (int i = new_word_len; i < (*x)->word_len; i++)
+    {
+        (*x)->a[i] = 0;
     }
 
-    // 상위 인덱스의 남은 부분 처리
-    bi_refine(result);
-
+        // Reallocate memory for the new word length
+    word* copy = (*x)->a;
+    copy = (word*)realloc((*x)->a, new_word_len * sizeof(word));
+    if (!copy) {
+        fprintf(stderr, "Error: Memory reallocation failed in 'right_shift_word'\n");
+        exit(1);
     }
+    (*x)->a = copy;
+    // Update the word length
+    (*x)->word_len = new_word_len;
 }

@@ -14,7 +14,7 @@ msg bi_assign(pbigint* dst, const pbigint* src);
 void bi_assign_kara(pbigint* dst, const pbigint src)
 msg bi_print(pbigint* dst, int base);
 void bi_shift_left(pbigint* result, const pbigint A, int shift);
-void bi_shift_right(pbigint* result, const pbigint src, int shift);
+void bi_shift_right(pbigint* result, int shift);
 
 
 

@@ -71,7 +71,9 @@ void test_ran()
     // 큰 정수 초기화
     bi_get_random(&a, large_word_len);
     bi_get_random(&b, large_word_len);
-
+    
+    clock_t start,end;
+    double cpu_time_used;
     //덧셈과 뺄셈 수행
     bi_add(a, b, &result1);
     test_check(&a, &b, &result1, 1); // 덧셈 결과 기록
@@ -79,10 +81,18 @@ void test_ran()
     SUB(a, b, &result1);
     test_check(&a, &b, &result1, 2); 
 
+    start=clock();
     MUL(a, b, &result1);
+    end=clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    printf("MUL Time: %f seconds\n", cpu_time_used);
     test_check(&a, &b, &result1, 3);
 
+    start=clock();
     MUL_kara(a, b, &result1);
+    end=clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    printf("MUL_kara Time: %f seconds\n", cpu_time_used);
     test_check(&a, &b, &result1, 3);
     
     DIVC(a, b, &result1, &result2);

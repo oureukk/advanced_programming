@@ -30,7 +30,7 @@ msg bi_new(pbigint* dst, int word_len) {
 // 메모리 해제 함수
 void bi_delete(pbigint* dst) {
     if (*dst == NULL)
-        return 0;
+        return ;
 #ifdef ZERORIZE
     array_init((*x)->a, (*x)->wordlen);
 #endif
@@ -186,6 +186,7 @@ msg bi_set_from_string(pbigint* dst, const char* str, int base) { //const str을
 }
 
 msg bi_assign(pbigint* dst, const pbigint* src) { //const를 읽기전용으로
+    
     bi_delete(dst);
     bi_new(dst, (*src)->word_len);
 
@@ -194,6 +195,7 @@ msg bi_assign(pbigint* dst, const pbigint* src) { //const를 읽기전용으로
 
     return 0;
 } // bi_function.c 파일
+
 void bi_assign_kara(pbigint* dst, const pbigint src) {
     if (src == NULL || src->word_len == 0) {
         fprintf(stderr, "Error: Source bigint is NULL or invalid\n");
@@ -216,6 +218,9 @@ void bi_assign_kara(pbigint* dst, const pbigint src) {
         (*dst)->a[i] = src->a[i];
     }
 }
+
+
+
 void bi_shift_left(pbigint* result, const pbigint A, int shift) {
     if (shift == 0) {
         bi_assign(result, &A);
@@ -245,6 +250,7 @@ void bi_shift_left(pbigint* result, const pbigint A, int shift) {
     }
     bi_refine(&tmp); // 상위 0 제거
     bi_assign( result, &tmp);
+    
 }
 void bi_shift_right(pbigint* x, int shift) 
 {   

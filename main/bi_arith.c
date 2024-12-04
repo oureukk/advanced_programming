@@ -124,18 +124,12 @@ void bi_add(const pbigint A, const pbigint B, pbigint* C) {
     }
 }
 
-void SUB_ABC(msg A, msg B, msg* b, msg* C) {
-    *b = 0;                  // 초기 빌림은 0
-    *C = A - B;              // 기본 뺄셈
-    if (A < B) {             // 빌림 발생
-        *b = 1;
-    }
-}
-
 void SUB_ABB(msg A, msg B, msg b, msg* b_out, msg* C) {
-    *b_out = 0;              // 초기 빌림은 0
+    *b_out = 0;             // 초기 빌림은 0
+
     *C = A - b;              // A에서 빌림 먼저 처리
-    if (A < b) {             // 빌림으로 오버플로우 발생
+
+    if (A < b && b == 0) {             // 빌림으로 오버플로우 발생
         *b_out = 1;
     }
     *C -= B;                 // 남은 B를 처리
@@ -198,7 +192,7 @@ void SUB(const pbigint A, const pbigint B, pbigint* C) {
 
     // Case: 0 < B <= A
     if (A->sign > 0 && B->sign > 0) {
-        if (A->word_len > B->word_len || (A->word_len == B->word_len && A->a[A->word_len - 1] >= B->a[B->word_len - 1])) {
+        if ((bi_compare_abs(A, B) > 0)) {
             SUBC(A, B, C);
         }
         else {
@@ -210,7 +204,7 @@ void SUB(const pbigint A, const pbigint B, pbigint* C) {
 
     // Case: 0 > A >= B
     if (A->sign < 0 && B->sign < 0) {
-        if (A->word_len > B->word_len || (A->word_len == B->word_len && A->a[A->word_len - 1] <= B->a[B->word_len - 1])) {
+        if ((bi_compare_abs(A, B) < 0)) {
             SUBC(B, A, C);
         }
         else {
@@ -241,8 +235,8 @@ void SUB(const pbigint A, const pbigint B, pbigint* C) {
 }
 
 void mul_single_word(word A, word B, pbigint* result) {
-    const int half_word = 32 / 2;    // 워드를 절반으로 나눔
-    const word mask = (1UL << half_word) - 1; // 하위 비트를 위한 마스크
+    const int half_word = WORD_BITLEN / 2;    // 워드를 절반으로 나눔
+    const word mask = (1ULL << half_word) - 1; // 하위 비트를 위한 마스크
 
     word A0 = A & mask;                       // A의 하위 절반
     word A1 = A >> half_word;                 // A의 상위 절반
@@ -590,38 +584,13 @@ void DIVC(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
     bi_new(&B_prime, B->word_len);
     bi_assign(&A_prime, &A);
     bi_assign(&B_prime, &B);
-    //bi_shift_left(&A_prime, A, k);  // A' = A * 2^k
-    //bi_shift_left(&B_prime, B, k);  // B' = B * 2^k
+
     A_prime->sign = A->sign;
     B_prime->sign = B->sign;
 
     div_long_binary(A_prime, B_prime, Q, R);  // Use binary division on A' and B'
 
 
-    //bi_shift_right(R, *R, k);  // R = R' / 2^k
-
     bi_delete(&A_prime);
     bi_delete(&B_prime);
-}
-
-// DIVCC: Single-step division assuming A >= B
-void DIVCC(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
-    int n = A->word_len - 1;
-    int m = B->word_len - 1;
-    unsigned long long high = A->a[n];
-    if (n > m) {
-        high <<= WORD_BITLEN;
-        high |= A->a[n - 1];
-    }
-    unsigned long long Bm = B->a[m];
-    unsigned long long quotient = high / Bm;
-
-    bi_new(Q, 1);
-    (*Q)->a[0] = (word)(quotient < (1ULL << WORD_BITLEN) ? quotient : (1ULL << WORD_BITLEN) - 1);
-
-    pbigint product;
-    MUL(B, *Q, &product);
-    SUB(A, product, R);
-
-    bi_delete(&product);
 }

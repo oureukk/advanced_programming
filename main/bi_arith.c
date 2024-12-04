@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "bi_struct.h"
 #include "array.h"
 #include "bi_arith.h"
@@ -79,6 +80,7 @@ void ADDC(const pbigint A, const pbigint B, pbigint* C) {
 
 // Algorithm 7: ADD
 void bi_add(const pbigint A, const pbigint B, pbigint* C) {
+
     // A와 B 중 하나가 0일 경우
     if (A->word_len == 0) {
         bi_assign(C, &B);
@@ -90,12 +92,10 @@ void bi_add(const pbigint A, const pbigint B, pbigint* C) {
     }
 
     if (A->sign > 0 && B->sign < 0) {
-        // 절댓값 비교
         if (bi_compare_abs(A, B) >= 0) {
             SUBC(A, B, C);       // A >= B인 경우 A - |B|
             (*C)->sign = 1;
-        }
-        else {
+        } else {
             SUBC(B, A, C);       // A < B인 경우 |B| - A
             (*C)->sign = -1;
         }
@@ -103,12 +103,10 @@ void bi_add(const pbigint A, const pbigint B, pbigint* C) {
     }
 
     if (A->sign < 0 && B->sign > 0) {
-        // 절댓값 비교
         if (bi_compare_abs(A, B) > 0) {
             SUBC(A, B, C);       // |A| > B인 경우 |A| - B
             (*C)->sign = -1;
-        }
-        else {
+        } else {
             SUBC(B, A, C);       // |A| <= B인 경우 B - |A|
             (*C)->sign = 1;
         }
@@ -119,8 +117,7 @@ void bi_add(const pbigint A, const pbigint B, pbigint* C) {
     if (A->sign == B->sign) {
         if (A->word_len >= B->word_len) {
             ADDC(A, B, C);
-        }
-        else {
+        } else {
             ADDC(B, A, C);
         }
         (*C)->sign = A->sign;
@@ -361,6 +358,7 @@ void MUL(const pbigint A, const pbigint B, pbigint* C){
     bi_delete(&abs_A);
     bi_delete(&abs_B);
 }
+
 void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
 
     if (x->word_len == 0 || y->word_len == 0) {
@@ -405,18 +403,22 @@ void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
 
     // A1 = x >> 1  
     bi_assign_kara(&A1, x);
-    bi_shift_right(&A1, l);
+    A1->sign = 1;
 
+    bi_shift_right(&A1, l);
+    
     // A0 = x % (2^l)
     bi_assign_kara(&A0, x);
     for (int i = l; i < A0->word_len; i++) {
         A0->a[i] = 0;  // 상위 워드를 0으로 초기화
     }
     bi_refine(&A0);
+    A0->sign = 1;
 
     // B1 = y >> l
     bi_assign_kara(&B1, y);
     bi_shift_right(&B1, l);
+    B1->sign = 1;
 
     // B0 = y % (2^l)
     bi_assign_kara(&B0, y);
@@ -424,10 +426,10 @@ void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
         B0->a[i] = 0;  // 상위 워드를 0으로 초기화
     }
     bi_refine(&B0);
+    B0->sign = 1;
 
-
-    MULC(A1, B1, &T1);
-    MULC(A0, B0, &T0);
+    MUL(A1, B1, &T1);
+    MUL(A0, B0, &T0);
 
     
 
@@ -440,22 +442,52 @@ void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
     bi_new(&sum1, n + m);
     ADDC(C, T0, &sum1);
     
+    SUB(A0, A1, &S1);
+    SUB(B1, B0, &S0);
 
-    SUBC(A0, A1, &S1);
-    S1->sign = 1;
-
-    SUBC(B1, B0, &S0);
+    bool sign_S = ((S0)->sign) ^ ((S1)->sign);
     S0->sign = 1;
+    S1->sign = 1;
 
     MUL(S1, S0, &S);
 
+    if (sign_S) {
+        S->sign = -1;  // 하나만 음수인 경우 음수 설정
+    } else {
+        S->sign = 1;   // 부호가 같으면 양수 설정
+    }
+
 
     pbigint sum2=NULL,sum3=NULL;
-    bi_new(&sum2, n + 1);
+    bi_new(&sum2, n + m);
     bi_new(&sum3, n + m);
+    if (S->sign < 0) {
+        S->sign = -1;  // 음수로 설정
+    } else {
+        S->sign = 1;   // 양수로 설정
+    }
 
-    ADDC(T1,S,&sum2);
-    ADDC(T0,sum2,&sum3);
+    // T1의 부호 유지
+    if (T1->sign < 0) {
+        T1->sign = -1;  // 음수로 설정
+    } else {
+        T1->sign = 1;   // 양수로 설정
+    }
+    bi_add(T1,S,&sum2);
+
+    if (T0->sign < 0) {
+        T0->sign = -1;  // 음수로 설정
+    } else {
+        T0->sign = 1;   // 양수로 설정
+    }
+
+    if (sum2->sign < 0) {
+        sum2->sign = -1;  // 음수로 설정
+    } else {
+        sum2->sign = 1;   // 양수로 설정
+    }
+    bi_add(T0,sum2,&sum3);
+
     // C += S << l
     
     pbigint ShiftS=NULL;
@@ -463,8 +495,8 @@ void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
     bi_shift_left(&ShiftS, sum3, l * WORD_BITLEN);
 
     ADDC(sum1, ShiftS, z);  // 최종 결과를 z에 저장
-    (*z)->sign = x->sign * y->sign;
 
+    (*z)->sign = x->sign * y->sign;
     
     bi_delete(&A1);
     bi_delete(&A0);
@@ -481,9 +513,9 @@ void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
     bi_delete(&sum3);
     bi_delete(&ShiftS);
 }
+
 // Binary Long Division
-void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
-    if (bi_compare_abs(A, B) < 0) {
+void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {    if (bi_compare_abs(A, B) < 0) {
         bi_new(Q, 1);
         bi_new(R, A->word_len);
         bi_assign(R, &A);

@@ -594,3 +594,86 @@ void DIVC(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
     bi_delete(&A_prime);
     bi_delete(&B_prime);
 }
+
+// 추가
+// 모듈러 연산 함수 (나머지 계산)
+void bi_mod(const pbigint dividend, const pbigint divisor, pbigint* remainder) {
+    if (divisor->word_len == 0 || (divisor->a[0] == 0 && divisor->word_len == 1)) {
+        fprintf(stderr, "Error: Division by zero in bi_mod.\n");
+        return;
+    }
+
+    // 나머지를 저장할 변수
+    pbigint Q = NULL, R = NULL;
+    bi_new(&R, divisor->word_len);
+
+    // div_long_binary를 사용하여 나머지를 계산
+    div_long_binary(dividend, divisor, &Q, &R);  // 몫은 필요 없고 나머지만 사용
+
+    // 나머지 할당
+    bi_assign(remainder, &R);
+
+    // 나머지가 0인 경우 확인 (디버깅용)
+    bi_print(remainder, 16);  // 16진수로 출력하여 값 확인
+
+    // 메모리 해제
+    bi_delete(&Q);
+    bi_delete(&R);
+}
+
+// Left-to-Right 모듈러 거듭제곱 함수
+void ltr(const pbigint base, const pbigint exponent, const pbigint modulus, pbigint* result) {
+    if (modulus->word_len == 0 || (modulus->a[0] == 0 && modulus->word_len == 1)) {
+        fprintf(stderr, "Error: Modulus cannot be zero.\n");
+        return;
+    }
+
+    // 결과값 초기화: result = 1
+    bi_new(result, 1);
+    (*result)->a[0] = 1;
+    (*result)->word_len = 1;
+    (*result)->sign = 1;
+
+    // 임시 변수 생성
+    pbigint base_copy = NULL;
+    pbigint temp_result = NULL;
+    bi_new(&base_copy, modulus->word_len);
+    bi_new(&temp_result, modulus->word_len);
+
+    // base % modulus로 초기화
+    bi_assign(&base_copy, base);
+    bi_mod(base_copy, modulus, &base_copy);
+
+    // 이진 지수법 (Binary Exponentiation)
+    for (int i = 0; i < exponent->word_len * WORD_BITLEN; i++) {
+        // result = (result * result) % modulus
+        MUL(*result, *result, &temp_result);
+        bi_mod(&temp_result, modulus, result);
+
+        // 현재 비트가 1이면 result = (result * base_copy) % modulus
+        if (bi_test_bit(exponent, i)) {
+            MUL(*result, base_copy, &temp_result);
+            bi_mod(&temp_result, modulus, result);
+        }
+
+        // Base를 제곱 (base = base^2)
+        MUL(base_copy, base_copy, &temp_result);
+        bi_mod(&temp_result, modulus, &base_copy);
+    }
+
+    // 임시 변수 정리
+    bi_delete(&base_copy);
+    bi_delete(&temp_result);
+}
+
+// 지수에서 i번째 비트가 1인지 확인하는 함수
+// bi_test_bit 예시 구현
+int bi_test_bit(const pbigint n, int bit_index) {
+    if (bit_index < 0 || bit_index >= n->word_len * WORD_BITLEN) {
+        return 0;  // 범위 밖의 비트는 0
+    }
+
+    int word_index = bit_index / WORD_BITLEN;
+    int bit_position = bit_index % WORD_BITLEN;
+    return (n->a[word_index] >> (WORD_BITLEN - bit_position - 1)) & 1;
+}

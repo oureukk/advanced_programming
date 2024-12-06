@@ -115,3 +115,65 @@ int main() {
     }
     return 0;
 }
+
+// 추가
+// ltr 테스트
+/*
+int main() {
+    pbigint base = NULL;
+    pbigint exponent = NULL;
+    pbigint modulus = NULL;
+    pbigint result = NULL;
+
+    // 큰 정수 초기화
+    int large_word_len = 1920 / sizeof(word);
+
+    // 랜덤 값으로 base, exponent, modulus 초기화
+    if (bi_get_random(&base, large_word_len) != 0) {
+        fprintf(stderr, "Failed to initialize base\n");
+        return 1;
+    }
+
+    if (bi_get_random(&exponent, large_word_len) != 0) {
+        fprintf(stderr, "Failed to initialize exponent\n");
+        return 1;
+    }
+
+    if (bi_get_random(&modulus, large_word_len) != 0) {
+        fprintf(stderr, "Failed to initialize modulus\n");
+        return 1;
+    }
+
+    // ltr 함수 호출 전에 시간 측정
+    clock_t start_time = clock();
+
+    // LTR 모듈러 거듭제곱 계산 (이 함수는 정의되어 있어야 함)
+    ltr(base, exponent, modulus, &result);
+
+    clock_t end_time = clock();
+    double time_taken = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    printf("ltr function took %.4f seconds to execute\n", time_taken);
+
+    // 결과 출력
+    printf("Base: ");
+    bi_print(&base, 16);
+    printf("Exponent: ");
+    bi_print(&exponent, 16);
+    printf("Modulus: ");
+    bi_print(&modulus, 16);
+
+    // 결과가 있다면 결과 출력
+    if (result != NULL) {
+        printf("Result: ");
+        bi_print(&result, 16); // 결과 출력 (16진수)
+    }
+    else printf("no result error");
+
+    // 메모리 해제
+    bi_delete(&base);
+    bi_delete(&exponent);
+    bi_delete(&modulus);
+    bi_delete(&result);
+
+    return 0;
+}*/

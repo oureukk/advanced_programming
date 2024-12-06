@@ -24,4 +24,8 @@ void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R);
 void DIVC(const pbigint A, const pbigint B, pbigint* Q, pbigint* R);
 void DIVCC(const pbigint A, const pbigint B, pbigint* Q, pbigint* R);
 
+// 추가
+void bi_mod(const pbigint dividend, const pbigint divisor, pbigint* remainder);
+void ltr(const pbigint base, const pbigint exponent, const pbigint modulus, pbigint* result);
+int bi_test_bit(const pbigint n, int bit_index);
 #endif

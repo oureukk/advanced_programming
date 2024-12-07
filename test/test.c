@@ -106,7 +106,7 @@ void test_ran()
 
 }
 
-int main() {
+/*int main() {
     srand((unsigned int)time(NULL));
     for (int i = 0; i < 10; i++)
     {
@@ -114,66 +114,79 @@ int main() {
 
     }
     return 0;
-}
+}*/
 
-// 추가
-// ltr 테스트
-/*
+// rtl, ltr, bi_mod 테스트 함수 메모리 문제 발생
+// bi_function.c 내 bi_new, bi_delete, bi_assign, bi_print 부분
 int main() {
     pbigint base = NULL;
     pbigint exponent = NULL;
     pbigint modulus = NULL;
     pbigint result = NULL;
+    pbigint result2 = NULL;
 
     // 큰 정수 초기화
     int large_word_len = 1920 / sizeof(word);
 
     // 랜덤 값으로 base, exponent, modulus 초기화
-    if (bi_get_random(&base, large_word_len) != 0) {
+    /*if (bi_get_random(&base, large_word_len) != 0) {
         fprintf(stderr, "Failed to initialize base\n");
         return 1;
     }
 
     if (bi_get_random(&exponent, large_word_len) != 0) {
         fprintf(stderr, "Failed to initialize exponent\n");
+        bi_delete(&base);  // base 메모리 해제
         return 1;
     }
 
     if (bi_get_random(&modulus, large_word_len) != 0) {
         fprintf(stderr, "Failed to initialize modulus\n");
+        bi_delete(&base);  // base 메모리 해제
+        bi_delete(&exponent);  // exponent 메모리 해제
         return 1;
-    }
+    }*/
+
+    bi_get_random(&base, large_word_len);
+    bi_get_random(&exponent, large_word_len);
+    bi_get_random(&modulus, large_word_len);
 
     // ltr 함수 호출 전에 시간 측정
     clock_t start_time = clock();
 
-    // LTR 모듈러 거듭제곱 계산 (이 함수는 정의되어 있어야 함)
+    // LTR 모듈러 거듭제곱 계산
     ltr(base, exponent, modulus, &result);
-
+    
     clock_t end_time = clock();
     double time_taken = (double)(end_time - start_time) / CLOCKS_PER_SEC;
     printf("ltr function took %.4f seconds to execute\n", time_taken);
-
-    // 결과 출력
-    printf("Base: ");
-    bi_print(&base, 16);
-    printf("Exponent: ");
-    bi_print(&exponent, 16);
-    printf("Modulus: ");
-    bi_print(&modulus, 16);
-
+    
     // 결과가 있다면 결과 출력
     if (result != NULL) {
         printf("Result: ");
         bi_print(&result, 16); // 결과 출력 (16진수)
     }
-    else printf("no result error");
+    else printf("no result error\n");
+
+    // RTL 모듈러 거듭제곱 계산
+    rtl(base, exponent, modulus, &result2);
+
+    // 결과가 있다면 결과 출력
+    if (result != NULL) {
+        printf("Result: ");
+        bi_print(&result2, 16); // 결과 출력 (16진수)
+    }
+    else printf("no result error\n");
+
+    // bi_mod 메모리 문제 발생
+    //bi_mod(base, exponent, modulus);
 
     // 메모리 해제
     bi_delete(&base);
     bi_delete(&exponent);
     bi_delete(&modulus);
     bi_delete(&result);
+    bi_delete(&result2);
 
     return 0;
-}*/
+}

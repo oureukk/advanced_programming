@@ -75,6 +75,18 @@ try:
                 print("wrong compute MUL",count)
                 print("파이썬 계산\t",compute)
                 print("C 계산\t\t", result)  
+
+        elif oper == "31":
+            compute=remove_hex_prefix(hex(num1*num1))
+            if(result == compute):
+                i=i+1
+                continue
+            else:
+                j=j+1
+                print("wrong compute sqr",count)
+                print("파이썬 계산\t",compute)
+                print("C 계산\t\t", result)  
+                
         elif oper == "4":
             if num1==0 or num2 ==0:
                 compute = "0"

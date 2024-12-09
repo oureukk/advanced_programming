@@ -41,7 +41,6 @@ void ADD_ABC(msg A, msg B, msg c, msg* c_out, msg* C) {
     *C = sum; // 최종 합계 저장오
 }
 
-
 void ADDC(const pbigint A, const pbigint B, pbigint* C) {
     int n = A->word_len;
     int m = B->word_len;
@@ -76,7 +75,6 @@ void ADDC(const pbigint A, const pbigint B, pbigint* C) {
         (*C)->word_len = max_len;
     }
 }
-
 
 // Algorithm 7: ADD
 void bi_add(const pbigint A, const pbigint B, pbigint* C) {
@@ -267,7 +265,6 @@ void mul_single_word(word A, word B, pbigint* result) {
     (*result)->a[1] = C1;                     // 상위 워드 저장
 }
 
-
 void MUL_AB(word A, word B, word* C_high, word* C_low) {
     bigint* temp_result = NULL;
     bi_new(&temp_result, 2); // 결과 저장 공간 생성
@@ -352,113 +349,7 @@ void MUL(const pbigint A, const pbigint B, pbigint* C){
     bi_delete(&abs_A);
     bi_delete(&abs_B);
 }
-void square_single_word(word A, pbigint* result) {
-    const int half_word = WORD_BITLEN / 2;    // 워드를 절반으로 나눔
-    const word mask = (1ULL << half_word) - 1; // 하위 비트를 위한 마스크
 
-    // 상위와 하위 워드 분리
-    word A0 = A & mask;                         // 하위 워드
-    word A1 = A >> half_word;                   // 상위 워드
-
-    // (1) 하위 워드 제곱 (C0)
-    word C0 = A0 * A0;
-
-    // (2) 상위 워드 제곱 (C1)
-    word C1 = A1 * A1;
-
-    // (3) 교차 항 계산
-    word T = A0 * A1;                           
-
-
-
-    word low = C0 + (T << half_word +1);         
-    word carry_low = (low < C0);                
-
-
-    // 상위 워드에 교차 항 상위 비트와 캐리 추가
-    word high = C1 + (T >> half_word-1) + carry_low;
-
-    // (5) 결과 저장
-    (*result)->a[0] = low;                         // 하위 워드 저장
-    (*result)->a[1] = high;                        // 상위 워드 저장
-}
-void SQR_AB(word A, word* C_high, word* C_low) {
-    bigint* temp_result = NULL;
-    bi_new(&temp_result, 2); // 결과 저장 공간 생성
-
-    square_single_word(A, &temp_result);
-
-    *C_low = temp_result->a[0]; // 하위 워드
-    *C_high = temp_result->a[1]; // 상위 워드
-
-    bi_delete(&temp_result); // 메모리 해제
-}
-
-
-void SQRC(const pbigint A, pbigint* C) {
-    int n = A->word_len;
-
-    bigint *C1 = NULL;
-    bigint *C2 = NULL;
-
-    bi_new(&C1, n +n);  // 결과 워드 공간 생성
-    bi_new(&C2, n +n);  // 결과 워드 공간 생성
-    C1->sign = 1;
-    C2->sign = 1;
-
-    for (int i = 0; i < n; i++) {
-        word C1_high, C1_low;
-        // A[i] * B[j]의 곱셈 결과를 C_high, C_low로 분리
-        SQR_AB(A->a[i], &C1_high, &C1_low);
-
-        msg carry = 0; 
-
-        // 하위 워드 더하기
-        ADD_ABC((C1)->a[i*2], C1_low, carry, &carry, &(C1)->a[i*2]);
-        // 상위 워드 더하기 (이전 carry 포함)
-        ADD_ABC((C1)->a[i*2 + 1], C1_high, carry, &carry, &(C1)->a[i*2 + 1]);
-
-
-        // //추가 캐리를 상위 워드로 전파
-        int k = i  + 2;  // 상위 워드 시작 인덱스
-        while (carry > 0) { // 캐리가 0이 될 때까지 전파
-            ADD_ABC((C1)->a[k], 0, carry, &carry, &(C1)->a[k]);
-            k++;
-        }
-
-        for (int j = i+1; j < n ; j++) {
-            word C2_high, C2_low;
-            MUL_AB(A->a[i], A->a[j], &C2_high, &C2_low);
-                
-            msg carry = 0;  // 전체 연산에서 사용할 캐리
-
-            // 하위 워드 더하기
-            ADD_ABC((C2)->a[i + j], C2_low, carry, &carry, &(C2)->a[i + j]);
-            // 상위 워드 더하기 (이전 carry 포함)
-            ADD_ABC((C2)->a[i + j + 1], C2_high, carry, &carry, &(C2)->a[i + j + 1]);
-
-            // //추가 캐리를 상위 워드로 전파
-            int k = i + j + 2;  // 상위 워드 시작 인덱스
-            while (carry > 0) { // 캐리가 0이 될 때까지 전파
-                ADD_ABC((C2)->a[k], 0, carry, &carry, &(C2)->a[k]);
-                k++;
-            }
-
-        }
-    }
-
-
-    bi_shift_left(&C2, C2, 1);
-    bi_print(&C2, 16);
-    bi_new(C, n  +n + 1);
-
-    bi_add(C1, C2, C);
-
-    bi_delete(&C1);
-    bi_delete(&C2);
-    bi_refine(C);  // 상위 0 제거
-
-}
 void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
 
     if (x->word_len == 0 || y->word_len == 0) {
@@ -749,38 +640,62 @@ void ltr(const pbigint base, const pbigint exponent, const pbigint modulus, pbig
 
     bi_new(&base_copy, modulus->word_len);
     bi_new(&temp_result, modulus->word_len);
-    // 디버깅용 출력 0만 출력되는 문제 발생
-    //bi_print(&base_copy, 16);
-    //bi_print(&temp_result, 16);
-    
+
     // base % modulus로 초기화
-    bi_assign(&base_copy, base);
+    bi_assign(&base_copy, &base);
     bi_mod(base_copy, modulus, &base_copy);
+
+    // 디버깅용 출력
+    //bi_print(&base_copy, 16);
+    //printf("\n");
+    //bi_print(&temp_result, 16);
 
     // 지수 복사
     pbigint exp_copy = NULL;
-    bi_assign(&exp_copy, exponent);
+    bi_assign(&exp_copy, &exponent);
 
     // LTR Modular Exponentiation
     while (exp_copy->word_len > 0) {
-        // 가장 왼쪽 비트가 1인지 확인
-        int highest_bit = (exp_copy->a[0] & ((word)1 << (WORD_BITLEN - 1))) ? 1 : 0;
-
-        if (highest_bit) {
+        // 가장 오른쪽 비트가 1인지 확인
+        if (exp_copy->a[0] & 1) {
             // result = (result * base_copy) % modulus
             MUL(*result, base_copy, &temp_result);
             bi_mod(temp_result, modulus, result);
+            //printf("Updated result: ");
+            //bi_print(result, 16);
+            //printf("\n");
         }
 
         // base_copy = (base_copy * base_copy) % modulus
         MUL(base_copy, base_copy, &temp_result);
         bi_mod(temp_result, modulus, &base_copy);
+        //printf("Updated base_copy: ");
+        //bi_print(&base_copy, 16);
+        //printf("\n");
 
-        // 지수를 왼쪽으로 1비트 시프트
-        bi_shift_left(&exp_copy, exp_copy, 1);
+        // 지수를 오른쪽으로 1비트 시프트
+        bi_shift_right(&exp_copy, 1);
 
         // leading zero 제거
         bi_refine(&exp_copy);
+
+        // exp_copy가 0인지 확인하여 루프 종료
+        bool is_zero = true;
+        for (int i = 0; i < exp_copy->word_len; i++) {
+            if (exp_copy->a[i] != 0) {
+                is_zero = false;
+                break;
+            }
+        }
+
+        if (is_zero) {
+            break; // exp_copy가 0이면 루프 종료
+        }
+
+        // 디버깅 출력
+        //printf("Updated exp_copy: ");
+        //bi_print(&exp_copy, 16);
+        //printf("\n");
     }
 
     // 메모리 해제
@@ -788,6 +703,95 @@ void ltr(const pbigint base, const pbigint exponent, const pbigint modulus, pbig
     bi_delete(&temp_result);
     bi_delete(&exp_copy);
 }
+
+// ltr shift_right 사용X
+/*void ltr_2(const pbigint base, const pbigint exponent, const pbigint modulus, pbigint* result) {
+    if (modulus->word_len == 0 || (modulus->a[0] == 0 && modulus->word_len == 1)) {
+        fprintf(stderr, "Error: Modulus cannot be zero.\n");
+        return;
+    }
+
+    // 결과값 초기화: result = 1
+    bi_new(result, 1);
+    (*result)->a[0] = 1;
+    (*result)->word_len = 1;
+    (*result)->sign = 1;
+
+    // 임시 변수 생성
+    pbigint base_copy = NULL;
+    pbigint temp_result = NULL;
+
+    bi_new(&base_copy, modulus->word_len);
+    bi_new(&temp_result, modulus->word_len);
+
+    // base % modulus로 초기화
+    bi_assign(&base_copy, &base);
+    bi_mod(base_copy, modulus, &base_copy);
+
+    // 디버깅용 출력
+    bi_print(&base_copy, 16);
+    printf("\n");
+    bi_print(&temp_result, 16);
+
+    // 지수 복사
+    pbigint exp_copy = NULL;
+    bi_assign(&exp_copy, &exponent);
+
+    // LTR Modular Exponentiation
+    while (exp_copy->word_len > 0) {
+        // 가장 오른쪽 비트가 1인지 확인
+        if (exp_copy->a[0] & 1) {
+            // result = (result * base_copy) % modulus
+            MUL(*result, base_copy, &temp_result);
+            bi_mod(temp_result, modulus, result);
+            printf("Updated result: ");
+            bi_print(result, 16);
+            printf("\n");
+        }
+
+        // base_copy = (base_copy * base_copy) % modulus
+        MUL(base_copy, base_copy, &temp_result);
+        bi_mod(temp_result, modulus, &base_copy);
+        printf("Updated base_copy: ");
+        bi_print(&base_copy, 16);
+        printf("\n");
+
+        // 지수를 오른쪽으로 1비트 시프트 직접 구현
+        // 오른쪽 비트 시프트를 수동으로 구현합니다.
+        int carry = 0;  // carry 비트를 저장하는 변수
+        for (int i = 0; i < exp_copy->word_len; i++) {
+            int current = exp_copy->a[i];
+            exp_copy->a[i] = (exp_copy->a[i] >> 1) | (carry << (sizeof(word) * 8 - 1));  // 비트 시프트 및 carry 이동
+            carry = current & 1;  // carry는 현재 비트에서 최하위 비트를 저장
+        }
+
+        // leading zero 제거
+        bi_refine(&exp_copy);
+
+        // exp_copy가 0인지 확인하여 루프 종료
+        bool is_zero = true;
+        for (int i = 0; i < exp_copy->word_len; i++) {
+            if (exp_copy->a[i] != 0) {
+                is_zero = false;
+                break;
+            }
+        }
+
+        if (is_zero) {
+            break; // exp_copy가 0이면 루프 종료
+        }
+
+        // 디버깅 출력
+        printf("Updated exp_copy: ");
+        bi_print(&exp_copy, 16);
+        printf("\n");
+    }
+
+    // 메모리 해제
+    bi_delete(&base_copy);
+    bi_delete(&temp_result);
+    bi_delete(&exp_copy);
+}*/
 
 void rtl(const pbigint base, const pbigint exponent, const pbigint modulus, pbigint* result) {
     if (modulus->word_len == 0 || (modulus->a[0] == 0 && modulus->word_len == 1)) {
@@ -804,17 +808,16 @@ void rtl(const pbigint base, const pbigint exponent, const pbigint modulus, pbig
     // base_copy = base % modulus
     pbigint base_copy = NULL;
     pbigint temp_result = NULL;
+
     bi_new(&base_copy, modulus->word_len);
     bi_new(&temp_result, modulus->word_len);
-    // 디버깅용 출력 0만 출력되는 문제 발생
-    //bi_print(&base_copy, 16);
-    //bi_print(&temp_result, 16);
-    bi_assign(&base_copy, base);
+
+    bi_assign(&base_copy, &base);
     bi_mod(base_copy, modulus, &base_copy);  // base_copy = base % modulus
 
     // 지수 복사
     pbigint exp_copy = NULL;
-    bi_assign(&exp_copy, exponent);  // exp_copy = exponent
+    bi_assign(&exp_copy, &exponent);  // exp_copy = exponent
 
     // RTL Modular Exponentiation
     while (1) {
@@ -828,20 +831,40 @@ void rtl(const pbigint base, const pbigint exponent, const pbigint modulus, pbig
         }
         if (is_zero) break; // 지수가 0이면 종료
 
-        // 지수의 LSB(가장 낮은 비트)가 1인지 확인
-        int is_odd = exp_copy->a[exp_copy->word_len - 1] & 1;
+        // 디버깅 출력: 현재 exp_copy, base_copy, result 출력
+        /*printf("exp_copy: ");
+        bi_print(&exp_copy, 16);
+        printf("base_copy: ");
+        bi_print(&base_copy, 16);
+        printf("result: ");
+        bi_print(result, 16);
+        printf("\n");*/
 
-        if (is_odd) { // LSB가 1이면
-            MUL(*result, base_copy, &temp_result); // result = result * base_copy
-            bi_mod(temp_result, modulus, result); // result %= modulus
+        // 지수의 LSB(가장 낮은 비트)가 1인지 확인
+        if (exp_copy->a[0] & 1) {  // LSB가 1이면
+            // result = (result * base_copy) % modulus
+            MUL(*result, base_copy, &temp_result);
+            bi_mod(temp_result, modulus, result);  // result %= modulus
+            // 디버깅 출력: result 업데이트 후 출력
+            //printf("Updated result after multiplication: ");
+            //bi_print(result, 16);
+            //printf("\n");
         }
 
         // base_copy = (base_copy * base_copy) % modulus
         MUL(base_copy, base_copy, &temp_result);
         bi_mod(temp_result, modulus, &base_copy);
+        // 디버깅 출력: base_copy 업데이트 후 출력
+        //printf("Updated base_copy after squaring: ");
+        //bi_print(&base_copy, 16);
+        //printf("\n");
 
-        // exp_copy를 오른쪽으로 1비트 시프트
+        // exp_copy를 오른쪽으로 1비트 시프트 (RTL에서 오른쪽으로 이동)
         bi_shift_right(&exp_copy, 1);
+        // 디버깅 출력: exp_copy 시프트 후 출력
+        //printf("Updated exp_copy after shifting: ");
+        //bi_print(&exp_copy, 16);
+        //printf("\n");
     }
 
     // 메모리 해제

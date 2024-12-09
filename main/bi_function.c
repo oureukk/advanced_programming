@@ -30,7 +30,7 @@ msg bi_new(pbigint* dst, int word_len) {
 // 메모리 해제 함수
 void bi_delete(pbigint* dst) {
     if (*dst == NULL)
-        return ;
+        return;
 #ifdef ZERORIZE
     array_init((*x)->a, (*x)->wordlen);
 #endif
@@ -41,14 +41,14 @@ void bi_delete(pbigint* dst) {
 }
 
 // 메모리 재설정 함수
-msg bi_refine(pbigint* dst ) {
+msg bi_refine(pbigint* dst) {
     // 상위 워드가 0인 경우 유효 워드 길이를 계산
     int new_word_len = (*dst)->word_len;
 
     while (new_word_len > 1 && (*dst)->a[new_word_len - 1] == 0) {
         new_word_len--;
     }
-    
+
 
 
 
@@ -67,7 +67,6 @@ msg bi_refine(pbigint* dst ) {
     (*dst)->word_len = new_word_len;  // 워드 길이 업데이트
     return 0;
 }
-
 
 // 무작위 난수로 bigint 초기화 함수
 msg bi_get_random(pbigint* dst, int word_len) {
@@ -88,6 +87,11 @@ msg bi_get_random(pbigint* dst, int word_len) {
 
 // 진법에 맞춰 bigint 출력하는 함수
 msg bi_print(pbigint* dst, int base) {
+    if (dst == NULL || *dst == NULL) {
+        printf("Error: NULL pointer passed to bi_print\n");
+        return 0;
+    }
+
     if (base < 2 || base > 16) {
         printf("Unsupported base: %d\n", base);
         return 0;
@@ -133,6 +137,7 @@ msg bi_set_from_array(pbigint* dst, int sign, int word_len, word* a) {
 
     return 0;
 }
+
 msg bi_set_from_string(pbigint* dst, const char* str, int base) { //const str을 읽기전용으로
     size_t str_len = strlen(str);
 
@@ -186,7 +191,7 @@ msg bi_set_from_string(pbigint* dst, const char* str, int base) { //const str을
 }
 
 msg bi_assign(pbigint* dst, const pbigint* src) { //const를 읽기전용으로
-    
+
     bi_delete(dst);
     bi_new(dst, (*src)->word_len);
 
@@ -194,7 +199,7 @@ msg bi_assign(pbigint* dst, const pbigint* src) { //const를 읽기전용으로
     memcpy((*dst)->a, (*src)->a, (*src)->word_len * sizeof(msg));
 
     return 0;
-} // bi_function.c 파일
+}
 
 void bi_assign_kara(pbigint* dst, const pbigint src) {
     if (src == NULL || src->word_len == 0) {
@@ -218,8 +223,6 @@ void bi_assign_kara(pbigint* dst, const pbigint src) {
         (*dst)->a[i] = src->a[i];
     }
 }
-
-
 
 void bi_shift_left(pbigint* result, const pbigint A, int shift) {
     if (shift == 0) {
@@ -249,21 +252,22 @@ void bi_shift_left(pbigint* result, const pbigint A, int shift) {
         }
     }
     bi_refine(&tmp); // 상위 0 제거
-    bi_assign( result, &tmp);
-    
+    bi_assign(result, &tmp);
+
 }
-void bi_shift_right(pbigint* x, int shift) 
-{   
+
+/*void bi_shift_right(pbigint* x, int shift)
+{
     if (shift < 0) {
         fprintf(stderr, "Error: shift is negative'\n");
         return;
     }
     if (shift >= (*x)->word_len)
         return;
-    
+
     int new_word_len = (*x)->word_len - shift;
 
-    for (int i = 0; i < new_word_len; i++) 
+    for (int i = 0; i < new_word_len; i++)
     {
         (*x)->a[i] = (*x)->a[i + shift];
     }
@@ -272,7 +276,7 @@ void bi_shift_right(pbigint* x, int shift)
         (*x)->a[i] = 0;
     }
 
-        // Reallocate memory for the new word length
+    // Reallocate memory for the new word length
     word* copy = (*x)->a;
     copy = (word*)realloc((*x)->a, new_word_len * sizeof(word));
     if (!copy) {
@@ -282,4 +286,48 @@ void bi_shift_right(pbigint* x, int shift)
     (*x)->a = copy;
     // Update the word length
     (*x)->word_len = new_word_len;
+}*/
+
+void bi_shift_right(pbigint* x, int shift)
+{
+    if (shift < 0) {
+        fprintf(stderr, "Error: shift cannot be negative.\n");
+        return;
+    }
+
+    if (shift == 0 || (*x)->word_len == 0) {
+        // Shift가 0이면 아무것도 하지 않음
+        return;
+    }
+
+    // Shift가 word_len보다 크면 워드 길이를 0으로 설정
+    if (shift >= (*x)->word_len) {
+        // 모든 값을 0으로 설정하고 word_len을 0으로 설정
+        memset((*x)->a, 0, (*x)->word_len * sizeof(word));
+        (*x)->word_len = 0;
+        return;
+    }
+
+    // 새로운 word_len 계산
+    int new_word_len = (*x)->word_len - shift;
+
+    // 배열을 오른쪽으로 shift만큼 이동
+    for (int i = 0; i < new_word_len; i++) {
+        (*x)->a[i] = (*x)->a[i + shift];
+    }
+
+    // 나머지 부분을 0으로 채움
+    for (int i = new_word_len; i < (*x)->word_len; i++) {
+        (*x)->a[i] = 0;
+    }
+
+    // 메모리 재할당: 새로운 word_len에 맞게 메모리 크기 조정
+    word* new_a = (word*)realloc((*x)->a, new_word_len * sizeof(word));
+    if (!new_a) {
+        fprintf(stderr, "Error: Memory reallocation failed in 'bi_shift_right'.\n");
+        exit(1);
+    }
+
+    (*x)->a = new_a;
+    (*x)->word_len = new_word_len;  // 새로운 word_len으로 갱신
 }

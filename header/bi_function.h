@@ -10,6 +10,7 @@ msg bi_set_from_string(pbigint* dst, const char* str, int base);
 msg bi_get_random(pbigint* dst, int word_len);
 void bi_delete(pbigint* dst);
 msg bi_refine(pbigint* dst);
+msg bi_refine_lower(pbigint* dst);
 msg bi_assign(pbigint* dst, const pbigint* src);
 void bi_assign_kara(pbigint* dst, const pbigint src);
 msg bi_print(pbigint* dst, int base);

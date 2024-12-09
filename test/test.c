@@ -137,6 +137,14 @@ void test_ran()
     cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
     printf("MUL_kara Time: %f seconds\n", cpu_time_used);
     test_check(&a, &b, &result1, 3);
+    
+    start = clock();
+    SQRC(a, &result1);
+    end = clock();
+    cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
+    printf("SQR Time: %f seconds\n", cpu_time_used);
+    test_check(&a, &b, &result1, 31);
+    sqr += cpu_time_used;
 
     DIVC(a, b, &result1, &result2);
     test_check(&a, &b, &result1, 4);

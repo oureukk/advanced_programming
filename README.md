@@ -43,7 +43,7 @@ This C library is designed to perform algebraic operations on large integers (bi
 ### Advanced Operations
 - **`bi_mod`**: Performs the modulus operation between two bigints.
 - **`ltr`**: Computes the modular exponentiation of large numbers.
-- **`bi_test_bit`**: Tests the value at a specific bit position.
+- **`barret_reduction`**: Compute A mod N quickly. 
 
 ---
 

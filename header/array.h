@@ -4,7 +4,7 @@
 #include <stdint.h>  
 #include "bi_struct.h"
 
-typedef uint32_t word;
+//typedef uint32_t word;
 
 msg array_init(word* a, int word_len);
 msg array_copy(word** dst, const word* src, int word_len);

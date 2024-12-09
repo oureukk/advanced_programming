@@ -18,6 +18,18 @@ try:
             stripped = num_str.lstrip('0')
             return '0' if stripped == '' else stripped
 
+    def mod(a, b):
+        #모듈러 연산 수행
+        return a % b
+    
+    def test_check_mod(num1, num2, result):
+        #모듈러 연산 검증 함수
+        computed = remove_hex_prefix(hex(bi_mod(num1, num2)))
+        if result == computed:
+            print(f"Check MOD success: {num1} % {num2} = {result}")
+        else:
+            print(f"Wrong compute MOD: {num1} % {num2} = {result}, computed: {computed}")
+
     i = 0
     j = 0
     count = 0
@@ -75,6 +87,17 @@ try:
             else:
                 j=j+1
                 print("wrong compute DIV",count)
+                print("파이썬 계산\t", compute)
+                print("C 계산\t\t", (result))
+        elif oper == "5":  # 모듈러 연산 (mod)
+            compute = remove_hex_prefix(hex(mod(num1, num2)))
+            if result == compute:
+                i=i+1
+                print("check5",count)
+                continue
+            else:
+                j=j+1
+                print("wrong compute MOD",count)
                 print("파이썬 계산\t", compute)
                 print("C 계산\t\t", (result))
                 
@@ -135,7 +158,7 @@ try:
         num3 = int(num3, 16)
         count += 1
 
-        if oper == "5":  # LTR 연산 검증
+        if oper == "6":  # LTR 연산 검증
             compute = remove_hex_prefix(hex(mod_exp(num1, num2, num3)))
             if result == compute:
                 i += 1
@@ -147,7 +170,7 @@ try:
                 print("Python 계산\t", compute)
                 print("C 계산\t\t", result)
 
-        elif oper == "6":  # RTL 연산 검증
+        elif oper == "7":  # RTL 연산 검증
             compute = remove_hex_prefix(hex(mod_exp(num1, num2, num3)))  # 동일한 모듈러 지수 계산
             if result == compute:
                 i += 1

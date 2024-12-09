@@ -11,7 +11,7 @@ void test_write(pbigint* pnum, FILE* fp) {
     }
 
     int first = 1; // 유효한 숫자 확인
-    for (int i = (*pnum)->word_len -1; i >= 0; i--) {
+    for (int i = (*pnum)->word_len - 1; i >= 0; i--) {
         if (first && (*pnum)->a[i] == 0) {
             continue; // 처음 유효한 값 전까지 0 생략
         }
@@ -21,7 +21,7 @@ void test_write(pbigint* pnum, FILE* fp) {
         if (WORD_BITLEN == 32)
             fprintf(fp, "%08x", (*pnum)->a[i]);
         if (WORD_BITLEN == 64)
-            fprintf(fp, "%016llx",(*pnum)->a[i]);
+            fprintf(fp, "%016llx", (*pnum)->a[i]);
     }
 
     if (first) { // 모든 값이 0인 경우
@@ -44,7 +44,7 @@ void test_check(pbigint* pnum1, pbigint* pnum2, pbigint* result, int oper) {
     else
         for (int attempt = 0; attempt < max_attempts; attempt++) {
             fopen_s(&fp, fname, "a");
-            if (fp != NULL) 
+            if (fp != NULL)
                 break;  // 성공 시 루프 탈출
             Sleep(100);
         }
@@ -105,6 +105,7 @@ void test_ran()
     pbigint result2 = NULL;
     pbigint result3 = NULL;
     pbigint result4 = NULL;
+    pbigint result5 = NULL;
 
     int large_word_len = 256 / sizeof(word);
     //1920/sizeof(word)
@@ -113,46 +114,49 @@ void test_ran()
     bi_get_random(&a, large_word_len);
     bi_get_random(&b, large_word_len);
     bi_get_random(&c, large_word_len);
-    
-    clock_t start,end;
+
+    clock_t start, end;
     double cpu_time_used;
     //덧셈과 뺄셈 수행
     bi_add(a, b, &result1);
     test_check(&a, &b, &result1, 1); // 덧셈 결과 기록
 
     SUB(a, b, &result1);
-    test_check(&a, &b, &result1, 2); 
+    test_check(&a, &b, &result1, 2);
 
-    start=clock();
+    start = clock();
     MUL(a, b, &result1);
-    end=clock();
-    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    end = clock();
+    cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
     printf("MUL Time: %f seconds\n", cpu_time_used);
     test_check(&a, &b, &result1, 3);
 
-    start=clock();
+    start = clock();
     MUL_kara(a, b, &result1);
-    end=clock();
-    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    end = clock();
+    cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
     printf("MUL_kara Time: %f seconds\n", cpu_time_used);
     test_check(&a, &b, &result1, 3);
-    
+
     DIVC(a, b, &result1, &result2);
     test_check(&a, &b, &result1, 4);
 
+    bi_mod(a, c, &result3);
+    test_check(&a, &c, &result3, 5);
+
     start = clock();
-    ltr(a, b, c, &result3);
+    ltr(a, b, c, &result4);
     end = clock();
     cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
     printf("LTR Time: %f seconds\n", cpu_time_used);
-    test_check_exp(&a, &b, &c, &result1, 5);
+    test_check_exp(&a, &b, &c, &result4, 6);
 
     start = clock();
-    rtl(a, b, c, &result4);
+    rtl(a, b, c, &result5);
     end = clock();
     cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
     printf("RTL Time: %f seconds\n", cpu_time_used);
-    test_check_exp(&a, &b, &c, &result1, 6);
+    test_check_exp(&a, &b, &c, &result5, 7);
 
     // 메모리 해제
     bi_delete(&a);
@@ -162,6 +166,7 @@ void test_ran()
     bi_delete(&result2);
     bi_delete(&result3);
     bi_delete(&result4);
+    bi_delete(&result5);
 }
 
 int main() {

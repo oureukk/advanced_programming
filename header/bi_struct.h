@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 
-#define WORD_BITLEN 8
+#define WORD_BITLEN 64
 
 #if (WORD_BITLEN == 8)
     typedef uint8_t word; // 워드 타입 정의

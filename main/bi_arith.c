@@ -349,7 +349,82 @@ void MUL(const pbigint A, const pbigint B, pbigint* C){
     bi_delete(&abs_A);
     bi_delete(&abs_B);
 }
+void square_single_word(word A, pbigint* result) {
+    const int half_word = WORD_BITLEN / 2;    // 워드를 절반으로 나눔
+    const word mask = (1ULL << half_word) - 1; // 하위 비트를 위한 마스크
+    // 상위와 하위 워드 분리
+    word A0 = A & mask;                         // 하위 워드
+    word A1 = A >> half_word;                   // 상위 워드
+    // (1) 하위 워드 제곱 (C0)
+    word C0 = A0 * A0;
+    // (2) 상위 워드 제곱 (C1)
+    word C1 = A1 * A1;
+    // (3) 교차 항 계산
+    word T = A0 * A1;
+    word low = C0 + (T << half_word + 1);
+    word carry_low = (low < C0);
+    // 상위 워드에 교차 항 상위 비트와 캐리 추가
+    word high = C1 + (T >> half_word - 1) + carry_low;
+    // (5) 결과 저장
+    (*result)->a[0] = low;                         // 하위 워드 저장
+    (*result)->a[1] = high;                        // 상위 워드 저장
+}
+void SQR_AB(word A, word* C_high, word* C_low) {
+    bigint* temp_result = NULL;
+    bi_new(&temp_result, 2); // 결과 저장 공간 생성
+    square_single_word(A, &temp_result);
+    *C_low = temp_result->a[0]; // 하위 워드
+    *C_high = temp_result->a[1]; // 상위 워드
+    bi_delete(&temp_result); // 메모리 해제
+}
+void SQRC(const pbigint A, pbigint* C) {
+    int n = A->word_len;
+    bigint* C1 = NULL;
+    bigint* C2 = NULL;
+    bi_new(&C1, n + n);  // 결과 워드 공간 생성
+    bi_new(&C2, n + n);  // 결과 워드 공간 생성
+    C1->sign = 1;
+    C2->sign = 1;
 
+    for (int i = 0; i < n; i++) {
+        word C1_high, C1_low;
+        // A[i] * B[j]의 곱셈 결과를 C_high, C_low로 분리
+        SQR_AB(A->a[i], &C1_high, &C1_low);
+        msg carry = 0;
+        // 하위 워드 더하기
+        ADD_ABC((C1)->a[i * 2], C1_low, carry, &carry, &(C1)->a[i * 2]);
+        // 상위 워드 더하기 (이전 carry 포함)
+        ADD_ABC((C1)->a[i * 2 + 1], C1_high, carry, &carry, &(C1)->a[i * 2 + 1]);
+        // //추가 캐리를 상위 워드로 전파
+        int k = i + 2;  // 상위 워드 시작 인덱스
+        while (carry > 0) { // 캐리가 0이 될 때까지 전파
+            ADD_ABC((C1)->a[k], 0, carry, &carry, &(C1)->a[k]);
+            k++;
+        }
+        for (int j = i + 1; j < n; j++) {
+            word C2_high, C2_low;
+            MUL_AB(A->a[i], A->a[j], &C2_high, &C2_low);
+
+            msg carry = 0;  // 전체 연산에서 사용할 캐리
+            // 하위 워드 더하기
+            ADD_ABC((C2)->a[i + j], C2_low, carry, &carry, &(C2)->a[i + j]);
+            // 상위 워드 더하기 (이전 carry 포함)
+            ADD_ABC((C2)->a[i + j + 1], C2_high, carry, &carry, &(C2)->a[i + j + 1]);
+            // //추가 캐리를 상위 워드로 전파
+            int k = i + j + 2;  // 상위 워드 시작 인덱스
+            while (carry > 0) { // 캐리가 0이 될 때까지 전파
+                ADD_ABC((C2)->a[k], 0, carry, &carry, &(C2)->a[k]);
+                k++;
+            }
+        }
+    }
+    bi_shift_left(&C2, C2, 1);
+    bi_new(C, n + n + 1);
+    ADD(C1, C2, C);
+    bi_delete(&C1);
+    bi_delete(&C2);
+    bi_refine(C);  // 상위 0 제거
+}
 void MUL_kara(const pbigint x, const pbigint y, pbigint* z) {
 
     if (x->word_len == 0 || y->word_len == 0) {

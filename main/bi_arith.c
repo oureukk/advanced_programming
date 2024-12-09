@@ -529,7 +529,13 @@ void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
     for (int i = n - 1; i >= 0; i--) {
         bi_shift_left(R, *R, 1);  // R <<= 1
         if ((A->a[i / WORD_BITLEN] >> (i % WORD_BITLEN)) & 1) {
+            //8비트 계산시 필요 : R 공간이 8비트라 케리 필요
+            bi_assign(&R_tmp, R);
             (*R)->a[0] |= 1;  // R += (A[i] << 0)
+            if (bi_compare_abs(*R, R_tmp) < 0)
+            {
+                (*R)->a[1]|= 1;
+            }
         }
 
         if (bi_compare_abs(*R, B) >= 0) {  
@@ -547,24 +553,19 @@ void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
 
 // DIVC implementation
 void DIVC(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
-    if (A->word_len == 0 || B->word_len == 0) {
+    if ((A->word_len == 1 || B->word_len == 1) && (A->a[0] == 0 || B->a[0] == 0)) {
         bi_new(Q, 1);
         (*Q)->a[0] = 0;
         (*Q)->sign = 1;
         return;
     }
 
-    int k = 0;
-    while ((B->a[B->word_len - 1] << k) < (1U << (WORD_BITLEN - 1))) {
-        k++;
-    }
-
-
 
     // A = ±1
     if (A->word_len == 1 && A->a[0] == 1) {
-        bi_assign(Q, &B);
-        (*Q)->sign = A->sign * B->sign;
+        bi_new(Q, 1);
+        (*Q)->a[0] = 0;
+        (*Q)->sign = 1;
         return;
     }
 

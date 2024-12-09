@@ -11,12 +11,17 @@ void test_write(pbigint* pnum, FILE* fp) {
     }
 
     int first = 1; // 유효한 숫자 확인
-    for (int i = (*pnum)->word_len - 1; i >= 0; i--) {
+    for (int i = (*pnum)->word_len -1; i >= 0; i--) {
         if (first && (*pnum)->a[i] == 0) {
             continue; // 처음 유효한 값 전까지 0 생략
         }
         first = 0;
-        fprintf(fp, "%08x", (*pnum)->a[i]);
+        if (WORD_BITLEN == 8)
+            fprintf(fp, "%02x", (*pnum)->a[i]);
+        if (WORD_BITLEN == 32)
+            fprintf(fp, "%08x", (*pnum)->a[i]);
+        if (WORD_BITLEN == 64)
+            fprintf(fp, "%016llx",(*pnum)->a[i]);
     }
 
     if (first) { // 모든 값이 0인 경우
@@ -29,14 +34,20 @@ void test_write(pbigint* pnum, FILE* fp) {
 void test_check(pbigint* pnum1, pbigint* pnum2, pbigint* result, int oper) {
     const char* fname = "test.txt";
     static int first_call = 1;
-    FILE* fp;
+    int max_attempts = 20;
+    FILE* fp = NULL;
 
     if (first_call) {
         fopen_s(&fp, fname, "w");
         first_call = 0;
     }
     else
-        fopen_s(&fp, fname, "a");
+        for (int attempt = 0; attempt < max_attempts; attempt++) {
+            fopen_s(&fp, fname, "a");
+            if (fp != NULL) 
+                break;  // 성공 시 루프 탈출
+            Sleep(100);
+        }
 
 
     if (fp == NULL) {
@@ -45,14 +56,11 @@ void test_check(pbigint* pnum1, pbigint* pnum2, pbigint* result, int oper) {
     }
 
     test_write(pnum1, fp);
-
     test_write(pnum2, fp);
-
     test_write(result, fp);
 
     fprintf(fp, "%d\n", oper);
 
-    printf("write OK\n");
     fclose(fp);
 }
 

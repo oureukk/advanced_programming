@@ -49,8 +49,30 @@ msg bi_refine(pbigint* dst) {
         new_word_len--;
     }
 
+    // 배열의 길이가 변경되었다면 메모리 재할당
+    if (new_word_len != (*dst)->word_len) {
+        msg* new_a = (msg*)calloc(new_word_len, sizeof(msg));
+        if (new_a == NULL) {
+            fprintf(stderr, "Memory reallocation failed\n");
+            return 1;
+        }
+        memcpy(new_a, (*dst)->a, new_word_len * sizeof(msg));
+        free((*dst)->a);
+        (*dst)->a = new_a;
+    }
 
+    (*dst)->word_len = new_word_len;  // 워드 길이 업데이트
+    return 0;
+}
 
+msg bi_refine_lower(pbigint* dst) {
+    // 하위 워드가 0인 경우 유효 워드 길이를 계산
+    int new_word_len = (*dst)->word_len;
+
+    // 하위 0비트를 제거
+    while (new_word_len > 1 && (*dst)->a[0] == 0) {
+        new_word_len--;
+    }
 
     // 배열의 길이가 변경되었다면 메모리 재할당
     if (new_word_len != (*dst)->word_len) {
@@ -253,7 +275,7 @@ void bi_shift_left(pbigint* result, const pbigint A, int shift) {
     }
     bi_refine(&tmp); // 상위 0 제거
     bi_assign(result, &tmp);
-
+    bi_delete(&tmp);
 }
 
 /*void bi_shift_right(pbigint* x, int shift)

@@ -529,13 +529,7 @@ void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
     for (int i = n - 1; i >= 0; i--) {
         bi_shift_left(R, *R, 1);  // R <<= 1
         if ((A->a[i / WORD_BITLEN] >> (i % WORD_BITLEN)) & 1) {
-            //8비트 계산시 필요 : R 공간이 8비트라 케리 필요
-            bi_assign(&R_tmp, R);
             (*R)->a[0] |= 1;  // R += (A[i] << 0)
-            if (bi_compare_abs(*R, R_tmp) < 0)
-            {
-                (*R)->a[1]|= 1;
-            }
         }
 
         if (bi_compare_abs(*R, B) >= 0) {  
@@ -553,19 +547,24 @@ void div_long_binary(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
 
 // DIVC implementation
 void DIVC(const pbigint A, const pbigint B, pbigint* Q, pbigint* R) {
-    if ((A->word_len == 1 || B->word_len == 1) && (A->a[0] == 0 || B->a[0] == 0)) {
+    if (A->word_len == 0 || B->word_len == 0) {
         bi_new(Q, 1);
         (*Q)->a[0] = 0;
         (*Q)->sign = 1;
         return;
     }
 
+    int k = 0;
+    while ((B->a[B->word_len - 1] << k) < (1U << (WORD_BITLEN - 1))) {
+        k++;
+    }
+
+
 
     // A = ±1
     if (A->word_len == 1 && A->a[0] == 1) {
-        bi_new(Q, 1);
-        (*Q)->a[0] = 0;
-        (*Q)->sign = 1;
+        bi_assign(Q, &B);
+        (*Q)->sign = A->sign * B->sign;
         return;
     }
 
@@ -600,15 +599,29 @@ void bi_mod(const pbigint dividend, const pbigint divisor, pbigint* remainder) {
         fprintf(stderr, "Error: Division by zero in bi_mod.\n");
         return;
     }
-
+    
     // 나머지를 저장할 변수
     pbigint Q = NULL, R = NULL;
 
-    bi_new(&R, dividend->word_len);
     bi_new(&Q, dividend->word_len);
-
+    bi_new(&R, dividend->word_len);
+    
     // div_long_binary를 사용하여 나머지를 계산
     div_long_binary(dividend, divisor, &Q, &R);  // 몫은 사용하지 않음, 나머지만 필요
+
+    // R 값이 음수인 경우 처리
+    if (R->sign == -1) {
+        pbigint adjusted_remainder = NULL;
+        bi_new(&adjusted_remainder, divisor->word_len);
+
+        bi_add(R, divisor, &adjusted_remainder); // R += divisor
+        bi_assign(remainder, &adjusted_remainder); // remainder에 조정된 값 복사
+
+        bi_delete(&adjusted_remainder);
+    }
+    else {
+        bi_assign(remainder, &R); // R이 양수인 경우 그대로 복사
+    }
 
     // remainder에 R 값을 복사
     bi_assign(remainder, &R);
